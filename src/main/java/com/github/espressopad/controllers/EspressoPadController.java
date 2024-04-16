@@ -276,7 +276,10 @@ public class EspressoPadController implements Initializable {
                 public void changed(ObservableValue<? extends Worker.State> obs, Worker.State oldState,
                                     Worker.State newState) {
                     if (newState == Worker.State.SUCCEEDED) {
-                        if (OsThemeDetector.isSupported() && OsThemeDetector.getDetector().isDark() && false) {
+                        if (OsThemeDetector.isSupported()) {
+                            OsThemeDetector.getDetector().isDark();
+                        }
+                        if (false) {
                             org.w3c.dom.Document doc = engine.getDocument();
                             Element styleNode = doc.createElement("style");
                             org.w3c.dom.Text styleContent = doc.createTextNode(
@@ -441,9 +444,14 @@ public class EspressoPadController implements Initializable {
         }
     }
 
-    private void closeAllPopups() {
-        this.autoCompleters.stream().filter(x -> x.getAutoCompletePopup() != null && x.getAutoCompletePopup().isShowing())
-                .forEach(x -> x.getAutoCompletePopup().hide());
+    public void closeAllPopups() {
+        for (TextEditorAutoComplete x : this.autoCompleters) {
+            if (x.getAutoCompletePopup() != null && x.getAutoCompletePopup().isShowing()) {
+                x.getAutoCompletePopup().hide();
+            }
+            if (this.popOver.isShowing())
+                this.popOver.hide();
+        }
     }
 
     // Tab that acts as a button and adds a new tab and selects it

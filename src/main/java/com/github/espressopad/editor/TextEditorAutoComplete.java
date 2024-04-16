@@ -9,6 +9,7 @@ import com.github.javaparser.ast.stmt.*;
 import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
+import javafx.collections.ObservableList;
 import javafx.event.EventHandler;
 import javafx.geometry.Bounds;
 import javafx.scene.control.ListView;
@@ -21,6 +22,7 @@ import jdk.jshell.JShell;
 import jdk.jshell.Snippet;
 import jdk.jshell.SnippetEvent;
 import jdk.jshell.SourceCodeAnalysis;
+import org.fxmisc.richtext.CodeArea;
 import org.fxmisc.richtext.model.TwoDimensional;
 
 import java.io.File;
@@ -28,10 +30,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicReference;
@@ -110,33 +109,13 @@ public class TextEditorAutoComplete {
         //this.codeArea.appendText(currentText);
     }
 
-    private void showAutoCompletePopup() {
-        Bounds textBounds;
-        this.keyphrases = this.textEditor.getShell()
-                .sourceCodeAnalysis()
-                .completionSuggestions(currentLine, currentLine.length(), new int[1])
-                .stream()
-                .map(SourceCodeAnalysis.Suggestion::continuation)
-                .filter(x -> !x.trim().matches("^\\$\\d+$"))
-                .collect(Collectors.toList());
-        if (this.autoCompletePopup != null)
-            this.autoCompletePopup.hide();
-        if (!this.keyphrases.isEmpty()) {
-            this.autocomplete.getItems().setAll(this.keyphrases);
-            this.autoCompletePopup = new Popup();
-            this.autocomplete.setMaxHeight(200);
-            this.autoCompletePopup.getContent().add(this.autocomplete);
+    private static String getToken(String s, int pos) {
+        Matcher nMatcher = Pattern.compile("^[a-zA-Z0-9-_]*").matcher(s.substring(pos));
+        Matcher pMatcher = Pattern.compile("[a-zA-Z0-9-_]*$").matcher(s.substring(0, pos));
 
-            textBounds = this.textEditor.getCodeArea().getCaretBounds().get();
-            this.showDocumentation(
-                    textBounds.getMaxX() + this.autocomplete.getWidth(),
-                    textBounds.getMaxY()// + this.autocomplete.getMaxHeight()
-            );
-            this.autoCompletePopup.show(this.textEditor.getCodeArea(), textBounds.getMaxX(), textBounds.getMaxY());
-            if (!this.autocomplete.getItems().isEmpty())
-                this.autocomplete.getSelectionModel().select(0);
-        }
-        this.textEditor.getCodeArea().requestFocus();
+        if (pMatcher.find() && nMatcher.find())
+            return pMatcher.group() + nMatcher.group();
+        return "";
     }
 
     private void showDocumentation(double x, double y) {
@@ -159,6 +138,54 @@ public class TextEditorAutoComplete {
                                 .collect(Collectors.joining())
                 );
         }
+    }
+
+    private void showAutoCompletePopup() {
+        Bounds textBounds;
+        this.keyphrases = this.textEditor.getShell()
+                .sourceCodeAnalysis()
+                .completionSuggestions(currentLine, currentLine.length(), new int[1])
+                .stream()
+                .map(SourceCodeAnalysis.Suggestion::continuation)
+                .filter(x -> !x.trim().matches("^\\$\\d+$"))
+                .collect(Collectors.toList());
+        if (this.autoCompletePopup != null)
+            this.autoCompletePopup.hide();
+        CodeArea codeArea = this.textEditor.getCodeArea();
+        if (!this.keyphrases.isEmpty()) {
+            ObservableList<String> autocompleteItems = this.autocomplete.getItems();
+            autocompleteItems.setAll(this.keyphrases);
+            this.autoCompletePopup = new Popup();
+            this.autocomplete.setMaxHeight(200);
+            this.autoCompletePopup.getContent().add(this.autocomplete);
+
+            Optional<Bounds> caretBounds = codeArea.getCaretBounds();
+            if (caretBounds.isPresent()) {
+                textBounds = caretBounds.get();
+                this.showDocumentation(
+                        textBounds.getMaxX() + this.autocomplete.getWidth(),
+                        textBounds.getMaxY()// + this.autocomplete.getMaxHeight()
+                );
+                this.autoCompletePopup.show(codeArea, textBounds.getMaxX(), textBounds.getMaxY());
+                if (!autocompleteItems.isEmpty())
+                    this.autocomplete.getSelectionModel().select(0);
+            }
+        }
+        codeArea.requestFocus();
+    }
+
+    private void addArtifactsAndImports(JShell shell) {
+        XmlHandler handler = new XmlHandler();
+        if (handler.getArtifactFile().exists()) {
+            for (String s : handler.parseArtifactXml())
+                shell.addToClasspath(s);
+        }
+        shell.addToClasspath(controller.getDumpFile().toString());
+        if (handler.getImportsFile().exists())
+            shell.eval(handler.parseImportXml()
+                    .stream()
+                    .map(imports -> String.format("import %s;", imports))
+                    .collect(Collectors.joining()));
     }
 
     protected void initAutoCompleteEvents() {
@@ -274,28 +301,31 @@ public class TextEditorAutoComplete {
                                             char bracket = textEditor.getCodeArea()
                                                     .getText(cursorPosition - 1, cursorPosition)
                                                     .charAt(0);
-                                            //PunctuationComplete.onPunctuationComplete(codeTextArea, bracket, cursorPosition);
-                                            switch (bracket) {
-                                                case '{':
-                                                    textEditor.getCodeArea().insertText(cursorPosition, "}");
-                                                    textEditor.getCodeArea().moveTo(cursorPosition);
-                                                    break;
-                                                case '[':
-                                                    textEditor.getCodeArea().insertText(cursorPosition, "]");
-                                                    textEditor.getCodeArea().moveTo(cursorPosition);
-                                                    break;
-                                                case '(':
-                                                    textEditor.getCodeArea().insertText(cursorPosition, ")");
-                                                    textEditor.getCodeArea().moveTo(cursorPosition);
-                                                    break;
-                                                case '\'':
-                                                    textEditor.getCodeArea().insertText(cursorPosition, "'");
-                                                    textEditor.getCodeArea().moveTo(cursorPosition);
-                                                    break;
-                                                case '\"':
-                                                    textEditor.getCodeArea().insertText(cursorPosition, "\"");
-                                                    textEditor.getCodeArea().moveTo(cursorPosition);
-                                                    break;
+                                            if (textEditor.getCodeArea().getCurrentLineEndInParargraph() ==
+                                                    textEditor.getCodeArea().getCaretColumn() || bracket == '\'' ||
+                                                    bracket == '"') {
+                                                switch (bracket) {
+                                                    case '{':
+                                                        textEditor.getCodeArea().insertText(cursorPosition, "}");
+                                                        textEditor.getCodeArea().moveTo(cursorPosition);
+                                                        break;
+                                                    case '[':
+                                                        textEditor.getCodeArea().insertText(cursorPosition, "]");
+                                                        textEditor.getCodeArea().moveTo(cursorPosition);
+                                                        break;
+                                                    case '(':
+                                                        textEditor.getCodeArea().insertText(cursorPosition, ")");
+                                                        textEditor.getCodeArea().moveTo(cursorPosition);
+                                                        break;
+                                                    case '\'':
+                                                        textEditor.getCodeArea().insertText(cursorPosition, "'");
+                                                        textEditor.getCodeArea().moveTo(cursorPosition);
+                                                        break;
+                                                    case '\"':
+                                                        textEditor.getCodeArea().insertText(cursorPosition, "\"");
+                                                        textEditor.getCodeArea().moveTo(cursorPosition);
+                                                        break;
+                                                }
                                             }
                                         }
                                     }
@@ -307,9 +337,19 @@ public class TextEditorAutoComplete {
                                                 tabAutoCompletion(currentLine);
                                         case UP:
                                         case DOWN:
+                                            autocomplete.requestFocus();
+                                            break;
                                         case LEFT:
                                         case RIGHT:
-                                            autocomplete.requestFocus();
+                                            controller.closeAllPopups();
+                                            break;
+                                    }
+
+                                    switch (event.getCode()) {
+                                        case BACK_SPACE:
+                                        case SPACE:
+                                        case ENTER:
+                                            controller.closeAllPopups();
                                             break;
                                     }
                                 }
@@ -344,7 +384,7 @@ public class TextEditorAutoComplete {
                                     currentLine = textEditor.getCodeArea()
                                             .getText(caretPos.getMajor())
                                             .substring(0, caretPos.getMinor());
-                                    String word = getWord(textEditor.getCodeArea().getText(caretPos.getMajor()),
+                                    String word = getToken(textEditor.getCodeArea().getText(caretPos.getMajor()),
                                             caretPos.getMinor());
                                     if (controller.isFindReplaceVisible())
                                         controller.getSearchResults();
@@ -378,31 +418,15 @@ public class TextEditorAutoComplete {
         });
     }
 
-    private void addArtifactsAndImports(JShell shell) {
-        XmlHandler handler = new XmlHandler();
-        if (handler.getArtifactFile().exists()) {
-            for (String s : handler.parseArtifactXml())
-                shell.addToClasspath(s);
-        }
-        shell.addToClasspath(controller.getDumpFile().toString());
-        if (handler.getImportsFile().exists())
-            shell.eval(handler.parseImportXml()
-                    .stream()
-                    .map(imports -> String.format("import %s;", imports))
-                    .collect(Collectors.joining()));
-    }
-
     private void addSnippets(JShell shell) {
         try {
             SourceCodeAnalysis.CompletionInfo completion = shell.sourceCodeAnalysis()
                     .analyzeCompletion(textEditor.getCodeArea().getText());
             while (completion.source() != null && !completion.source().isBlank()) {
+                if (completion.completeness() != SourceCodeAnalysis.Completeness.COMPLETE) break;
                 List<SnippetEvent> snippetEvents = shell.eval(completion.source());
                 for (SnippetEvent snippetEvent : snippetEvents) {
                     switch (snippetEvent.snippet().kind()) {
-                        case TYPE_DECL:
-                            //TODO 🤷‍
-                            break;
                         case METHOD:
                             BodyDeclaration<?> body = StaticJavaParser.parseBodyDeclaration(snippetEvent.snippet().source());
                             body.asMethodDeclaration().getBody().ifPresent(x -> {
@@ -419,10 +443,6 @@ public class TextEditorAutoComplete {
                             } else if (stmts.isForEachStmt()) {
                                 ForEachStmt forEachStmt = stmts.asForEachStmt();
                                 for (Statement st : forEachStmt.getBody().asBlockStmt().getStatements())
-                                    shell.eval(st.toString());
-                            } else if (stmts.isForStmt()) {
-                                ForStmt forStmt = stmts.asForStmt();
-                                for (Statement st : forStmt.getBody().asBlockStmt().getStatements())
                                     shell.eval(st.toString());
                             } else if (stmts.isForStmt()) {
                                 ForStmt forStmt = stmts.asForStmt();
@@ -467,14 +487,5 @@ public class TextEditorAutoComplete {
             }
         } catch (IllegalStateException e) {
         }
-    }
-
-    private static String getWord(String s, int pos) {
-        Matcher nMatcher = Pattern.compile("^[a-zA-Z0-9-_]*").matcher(s.substring(pos));
-        Matcher pMatcher = Pattern.compile("[a-zA-Z0-9-_]*$").matcher(s.substring(0, pos));
-
-        if (pMatcher.find() && nMatcher.find())
-            return pMatcher.group() + nMatcher.group();
-        return "";
     }
 }
