@@ -1,25 +1,26 @@
 package com.github.espressopad.models;
 
+import com.github.espressopad.views.components.StatusBar;
 import com.github.espressopad.views.components.TextEditor;
 import org.fife.ui.rtextarea.RTextScrollPane;
 
-import javax.swing.JEditorPane;
-import javax.swing.JPanel;
-import javax.swing.JSplitPane;
+import javax.swing.*;
 import java.awt.BorderLayout;
 
 public class ViewModel {
     private JPanel tab;
     private TextEditor textEditor;
     private JEditorPane resultView;
+    private StatusBar statusBar;
 
     public ViewModel() {
-        this(null, null, null);
+        this(null, null, null, null);
     }
 
-    private ViewModel(JPanel tab, TextEditor textEditor, JEditorPane resultView) {
+    private ViewModel(JPanel tab, TextEditor textEditor, JEditorPane resultView, StatusBar statusBar) {
         this.setTextEditor(textEditor);
         this.setResultView(resultView);
+        this.setStatusBar(statusBar);
         this.setTab(tab);
     }
 
@@ -33,7 +34,13 @@ public class ViewModel {
         this.tab = tab;
         this.tab.setLayout(new BorderLayout());
         double divider = .6d;
-        JSplitPane splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, new RTextScrollPane(this.textEditor), this.resultView);
+        JPanel panel = new JPanel();
+        panel.setLayout(new BoxLayout(panel, BoxLayout.PAGE_AXIS));
+        panel.add(new JScrollPane(this.resultView));
+        panel.add(this.statusBar);
+        RTextScrollPane scrollPane = new RTextScrollPane(this.textEditor);
+        this.textEditor.setScrollPane(scrollPane);
+        JSplitPane splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, scrollPane, panel);
         splitPane.setDividerLocation(divider);
         splitPane.setResizeWeight(divider);
         this.tab.add(splitPane, BorderLayout.CENTER);
@@ -46,7 +53,7 @@ public class ViewModel {
 
     public void setTextEditor(TextEditor textEditor) {
         if (textEditor == null)
-            textEditor = new TextEditor();
+            textEditor = new TextEditor(this);
         this.textEditor = textEditor;
     }
 
@@ -60,5 +67,15 @@ public class ViewModel {
         this.resultView = resultView;
         this.resultView.setEditable(false);
         this.resultView.setContentType("text/html");
+    }
+
+    public StatusBar getStatusBar() {
+        return this.statusBar;
+    }
+
+    public void setStatusBar(StatusBar statusBar) {
+        if (statusBar == null)
+            statusBar = new StatusBar();
+        this.statusBar = statusBar;
     }
 }

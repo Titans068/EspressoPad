@@ -15,10 +15,10 @@ public class EspressoPadApplication {
             throw new RuntimeException(e);
         }*/
 
-        EspressoPadView root = new EspressoPadView();
         JFrame frame = new JFrame("Espresso Pad");
+        EspressoPadView root = new EspressoPadView(frame);
         frame.setLayout(new BorderLayout());
-        frame.setSize(new Dimension(500, 500));
+        frame.setSize(new Dimension(800, 700));
         frame.add(root, BorderLayout.CENTER);
         frame.setLocationRelativeTo(null);
         frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
