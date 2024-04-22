@@ -6,12 +6,14 @@ import org.fife.ui.rtextarea.RTextScrollPane;
 
 import javax.swing.*;
 import java.awt.BorderLayout;
+import java.io.File;
 
 public class ViewModel {
     private JPanel tab;
     private TextEditor textEditor;
     private JEditorPane resultView;
     private StatusBar statusBar;
+    private File backingFile = null;
 
     public ViewModel() {
         this(null, null, null, null);
@@ -44,7 +46,6 @@ public class ViewModel {
         splitPane.setDividerLocation(divider);
         splitPane.setResizeWeight(divider);
         this.tab.add(splitPane, BorderLayout.CENTER);
-        //TODO this.tab.getTabPane().getStylesheets().add(this.getClass().getResource("editor.css").toExternalForm());
     }
 
     public TextEditor getTextEditor() {
@@ -77,5 +78,13 @@ public class ViewModel {
         if (statusBar == null)
             statusBar = new StatusBar();
         this.statusBar = statusBar;
+    }
+
+    public File getBackingFile() {
+        return this.backingFile;
+    }
+
+    public void setBackingFile(File backingFile) {
+        this.backingFile = backingFile;
     }
 }

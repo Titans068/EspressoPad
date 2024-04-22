@@ -3,8 +3,6 @@ package com.github.espressopad.views.components;
 import javax.swing.JLabel;
 import javax.swing.JScrollPane;
 import javax.swing.JTree;
-import javax.swing.event.TreeSelectionEvent;
-import javax.swing.event.TreeSelectionListener;
 import javax.swing.filechooser.FileSystemView;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeCellRenderer;
@@ -20,21 +18,16 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 public class FileTree extends JTree {
+    private final DefaultTreeModel defaultTreeModel;
+    private final File dir;
+
     public FileTree(File dir) {
+        this.dir = dir;
+        this.defaultTreeModel = new DefaultTreeModel(this.addNodes(null, dir));
         this.setLayout(new BorderLayout());
 
         // Make a tree list with all the nodes, and make it a JTree
-        this.setModel(new DefaultTreeModel(this.addNodes(null, dir)));
-
-        // Add a listener
-        this.addTreeSelectionListener(new TreeSelectionListener() {
-            @Override
-            public void valueChanged(TreeSelectionEvent e) {
-                DefaultMutableTreeNode node = (DefaultMutableTreeNode) e
-                        .getPath().getLastPathComponent();
-                System.out.println("You selected " + node);
-            }
-        });
+        this.setModel(this.defaultTreeModel);
 
         // Lastly, put the JTree into a JScrollPane.
         JScrollPane scrollpane = new JScrollPane();
@@ -45,7 +38,7 @@ public class FileTree extends JTree {
     /**
      * Add nodes from under "dir" into curTop. Highly recursive.
      */
-    DefaultMutableTreeNode addNodes(DefaultMutableTreeNode curTop, File dir) {
+    private DefaultMutableTreeNode addNodes(DefaultMutableTreeNode curTop, File dir) {
         String curPath = dir.getPath();
         DefaultMutableTreeNode curDir = new DefaultMutableTreeNode(curPath);
         // should only be null at root
@@ -75,6 +68,17 @@ public class FileTree extends JTree {
     }
 
     @Override
+    public DefaultTreeModel getModel() {
+        return this.defaultTreeModel;
+    }
+
+    public void refreshTree() {
+        this.setModel(null);
+        this.setModel(new DefaultTreeModel(this.addNodes(null, this.dir)));
+        this.setCellRenderer(new FileTreeCellRenderer());
+    }
+
+    @Override
     public Dimension getMinimumSize() {
         return new Dimension(200, 400);
     }
@@ -91,9 +95,9 @@ public class FileTree extends JTree {
         private final JLabel label;
 
         FileTreeCellRenderer() {
-            label = new JLabel();
-            label.setOpaque(true);
-            fileSystemView = FileSystemView.getFileSystemView();
+            this.label = new JLabel();
+            this.label.setOpaque(true);
+            this.fileSystemView = FileSystemView.getFileSystemView();
         }
 
         @Override
@@ -105,10 +109,7 @@ public class FileTree extends JTree {
                 boolean leaf,
                 int row,
                 boolean hasFocus) {
-            super.getTreeCellRendererComponent(
-                    tree, value, selected,
-                    expanded, leaf, row,
-                    hasFocus);
+            super.getTreeCellRendererComponent(tree, value, selected, expanded, leaf, row, hasFocus);
             String userObject = String.valueOf(((DefaultMutableTreeNode) value).getUserObject());
             if (!leaf)
                 this.setText(new File(userObject).getName());

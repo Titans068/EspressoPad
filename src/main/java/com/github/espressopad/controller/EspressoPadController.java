@@ -3,6 +3,7 @@ package com.github.espressopad.controller;
 import com.github.espressopad.io.ConsoleErrorStream;
 import com.github.espressopad.io.ConsoleOutputStream;
 import com.github.espressopad.models.ViewModel;
+import com.github.espressopad.views.components.FileTree;
 import com.github.espressopad.views.components.TextEditor;
 import com.github.javaparser.StaticJavaParser;
 import com.github.javaparser.ast.body.BodyDeclaration;
@@ -25,6 +26,9 @@ import javax.swing.event.CaretListener;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.text.BadLocationException;
+import javax.swing.tree.DefaultMutableTreeNode;
+import javax.swing.tree.TreePath;
+import java.awt.Desktop;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
@@ -32,8 +36,10 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.Executors;
@@ -82,7 +88,7 @@ public class EspressoPadController implements AutoCloseable {
             @Override
             public void mouseClicked(MouseEvent e) {
                 if (tabPane.getBoundsAt(tabPane.getSelectedIndex()).contains(e.getPoint()) &&
-                        e.getButton() == MouseEvent.BUTTON2)
+                        SwingUtilities.isMiddleMouseButton(e))
                     setupRemoveTab(tabPane);
             }
         });
@@ -220,6 +226,72 @@ public class EspressoPadController implements AutoCloseable {
                 }
             }
         });
+    }
+
+    public File setupTreeMouseListener(FileTree fileTree, MouseEvent event) {
+        int selRow = fileTree.getRowForLocation(event.getX(), event.getY());
+        TreePath selPath = fileTree.getPathForLocation(event.getX(), event.getY());
+        if (selRow != -1 && selPath != null) {
+            DefaultMutableTreeNode node = (DefaultMutableTreeNode) selPath.getLastPathComponent();
+            fileTree.setSelectionPath(selPath);
+            JPopupMenu contextMenu = new JPopupMenu();
+            JMenuItem refreshMenuItem = new JMenuItem("Refresh tree");
+            refreshMenuItem.addActionListener(e -> fileTree.refreshTree());
+            contextMenu.add(refreshMenuItem);
+            if (node.isLeaf()) {
+                File file = Path.of(
+                        String.valueOf(((DefaultMutableTreeNode) node.getParent()).getUserObject()),
+                        String.valueOf(node)
+                ).toFile();
+                if (SwingUtilities.isRightMouseButton(event)) {
+                    JMenuItem renameMenuItem = new JMenuItem("Rename file");
+                    renameMenuItem.addActionListener(e -> this.renameFile(fileTree, file));
+                    contextMenu.add(renameMenuItem);
+                    JMenuItem deleteMenuItem = new JMenuItem("Delete file");
+                    deleteMenuItem.addActionListener(e -> this.deleteFile(fileTree, file));
+                    contextMenu.add(deleteMenuItem);
+                    JMenuItem openFileLocationMenuItem = new JMenuItem("Open File Location");
+                    openFileLocationMenuItem.addActionListener(e -> openFileLocation(file));
+                    contextMenu.add(openFileLocationMenuItem);
+                    contextMenu.show(fileTree, event.getX(), event.getY());
+                } else if (event.getClickCount() == 2) return file;
+            } else if (SwingUtilities.isRightMouseButton(event)) {
+                JMenuItem openFileLocationMenuItem = new JMenuItem("Open File Location");
+                openFileLocationMenuItem.addActionListener(e -> openFileLocation(new File(String.valueOf(node))));
+                contextMenu.add(openFileLocationMenuItem);
+                contextMenu.show(fileTree, event.getX(), event.getY());
+            }
+        }
+        return null;
+    }
+
+    private void renameFile(FileTree fileTree, File file) {
+        String newName = JOptionPane.showInputDialog(fileTree, String.format("Rename %s", file.getName()), file.getName());
+        if (newName != null && !newName.isBlank()) {
+            file.renameTo(file.toPath().getParent().resolve(newName).toFile());
+            fileTree.refreshTree();
+        }
+    }
+
+    private void deleteFile(FileTree fileTree, File file) {
+        if (JOptionPane.showConfirmDialog(
+                fileTree,
+                String.format("Delete file %s", file.getName()),
+                "Delete file?",
+                JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION) {
+            file.delete();
+            fileTree.refreshTree();
+        }
+    }
+
+    private void openFileLocation(File file) {
+        try {
+            if (file.isFile())
+                Desktop.getDesktop().open(new File(file.getParent()));
+            else Desktop.getDesktop().open(file);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public void run(ViewModel viewModel) {

@@ -3,6 +3,7 @@ package com.github.espressopad.controller;
 import com.github.abrarsyed.jastyle.ASFormatter;
 import com.github.abrarsyed.jastyle.constants.EnumFormatStyle;
 import com.github.abrarsyed.jastyle.constants.SourceMode;
+import com.github.espressopad.models.ViewModel;
 import com.github.espressopad.views.components.StatusBar;
 import com.github.espressopad.views.components.TextEditor;
 import org.fife.rsta.ui.search.FindDialog;
@@ -13,12 +14,12 @@ import org.fife.ui.rtextarea.SearchContext;
 import org.fife.ui.rtextarea.SearchEngine;
 import org.fife.ui.rtextarea.SearchResult;
 
-import javax.swing.JFrame;
-import javax.swing.JOptionPane;
-import javax.swing.SwingUtilities;
-import javax.swing.UIManager;
+import javax.swing.*;
+import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.text.BadLocationException;
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 public class TextEditorController {
     private FindDialog findDialog;
@@ -132,6 +133,32 @@ public class TextEditorController {
             formatter.format(reader, writer);
             textEditor.replaceRange(writer.toString(), start, end);
         } catch (IOException | BadLocationException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public void saveFile(ViewModel viewModel) {
+        try {
+            File backingFile = viewModel.getBackingFile();
+            if (backingFile == null)
+                this.saveFileAs(viewModel);
+            else
+                Files.writeString(backingFile.toPath(), viewModel.getTextEditor().getText());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public void saveFileAs(ViewModel viewModel) {
+        try {
+            JFileChooser chooser = new JFileChooser();
+            chooser.setFileFilter(new FileNameExtensionFilter("JSH file", "jsh"));
+            if (chooser.showSaveDialog(viewModel.getTab()) == JFileChooser.APPROVE_OPTION) {
+                File selectedFile = chooser.getSelectedFile();
+                String fileName = selectedFile.getName() + ".jsh";
+                Files.writeString(Path.of(selectedFile.getParent(), fileName), viewModel.getTextEditor().getText());
+            }
+        } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }

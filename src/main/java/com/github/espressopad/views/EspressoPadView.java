@@ -11,10 +11,13 @@ import org.kordamp.ikonli.swing.FontIcon;
 
 import javax.swing.*;
 import javax.swing.event.ChangeEvent;
+import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.BorderLayout;
 import java.awt.Toolkit;
 import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -38,7 +41,16 @@ public class EspressoPadView extends JPanel {
         JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
         splitPane.setDividerLocation(.5);
         splitPane.setResizeWeight(.3);
-        splitPane.setLeftComponent(new FileTree(Utils.validateDefaultDirectory().toFile()));
+        FileTree fileTree = new FileTree(Utils.validateDefaultDirectory().toFile());
+        fileTree.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                File file = controller.setupTreeMouseListener(fileTree, e);
+                if (file != null)
+                    openFile(file);
+            }
+        });
+        splitPane.setLeftComponent(new JScrollPane(fileTree));
         splitPane.setRightComponent(this.tabPane);
         this.setLayout(new BorderLayout());
         this.add(splitPane, BorderLayout.CENTER);
@@ -61,10 +73,12 @@ public class EspressoPadView extends JPanel {
 
         JButton openFileBtn = new JButton(FontIcon.of(FontAwesomeSolid.FOLDER_OPEN, 15));
         openFileBtn.setToolTipText("Open File");
+        openFileBtn.addActionListener(event -> this.openFile());
         this.toolBar.add(openFileBtn);
 
         JButton saveFileBtn = new JButton(FontIcon.of(FontAwesomeSolid.SAVE, 15));
         saveFileBtn.setToolTipText("Save");
+        saveFileBtn.addActionListener(event -> this.editorController.saveFile(this.getCurrentViewModel()));
         this.toolBar.add(saveFileBtn);
 
         this.toolBar.addSeparator();
@@ -115,10 +129,9 @@ public class EspressoPadView extends JPanel {
 
     private void setupMenuBar() {
         JMenu fileMenu = new JMenu("File");
-
-        JMenuItem newFileItem = new JMenuItem("New File");
         int ctrlDownMask = Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx();
 
+        JMenuItem newFileItem = new JMenuItem("New File");
         newFileItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_N, ctrlDownMask));
         newFileItem.setMnemonic('N');
         newFileItem.addActionListener(event -> this.createTab(true));
@@ -127,6 +140,7 @@ public class EspressoPadView extends JPanel {
         JMenuItem openFileItem = new JMenuItem("Open File");
         openFileItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_O, ctrlDownMask));
         openFileItem.setMnemonic('O');
+        openFileItem.addActionListener(event -> this.openFile());
         fileMenu.add(openFileItem);
 
         fileMenu.add(new JSeparator());
@@ -134,11 +148,13 @@ public class EspressoPadView extends JPanel {
         JMenuItem saveFileItem = new JMenuItem("Save File");
         saveFileItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_S, ctrlDownMask));
         saveFileItem.setMnemonic('S');
+        saveFileItem.addActionListener(event -> this.editorController.saveFile(this.getCurrentViewModel()));
         fileMenu.add(saveFileItem);
 
         JMenuItem saveAsFileItem = new JMenuItem("Save File As");
         saveAsFileItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_S, ctrlDownMask | InputEvent.SHIFT_DOWN_MASK));
         saveAsFileItem.setMnemonic('A');
+        saveAsFileItem.addActionListener(event -> this.editorController.saveFileAs(this.getCurrentViewModel()));
         fileMenu.add(saveAsFileItem);
 
         fileMenu.add(new JSeparator());
@@ -150,7 +166,6 @@ public class EspressoPadView extends JPanel {
         fileMenu.add(closeFileItem);
 
         JMenuItem clearAllSavedItem = new JMenuItem("Clear All Saved");
-        clearAllSavedItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_W, ctrlDownMask));
         clearAllSavedItem.setMnemonic('l');
         fileMenu.add(clearAllSavedItem);
 
@@ -235,8 +250,16 @@ public class EspressoPadView extends JPanel {
         reformatSelectionItem.addActionListener(event -> this.editorController.reformatSelectionAction(this.getCurrentTextEditor()));
         editMenu.add(reformatSelectionItem);
 
-        JMenu toolsMenu = new JMenu("Tools");
         JMenu runMenu = new JMenu("Run");
+        JMenuItem runMenuItem = new JMenuItem("Execute");
+        runMenuItem.addActionListener(event -> this.controller.run(this.getCurrentViewModel()));
+        runMenu.add(runMenuItem);
+
+        JMenu toolsMenu = new JMenu("Tools");
+        JMenuItem settingsMenuItem = new JMenuItem("Settings");
+        settingsMenuItem.addActionListener(event -> new SettingsView().show(this.frame));
+        toolsMenu.add(settingsMenuItem);
+
         JMenu helpMenu = new JMenu("Help");
 
         this.menuBar.add(fileMenu);
@@ -273,6 +296,13 @@ public class EspressoPadView extends JPanel {
         return tab;
     }
 
+    private void openFile() {
+        JFileChooser chooser = new JFileChooser();
+        chooser.setFileFilter(new FileNameExtensionFilter("JSH file", "jsh"));
+        if (chooser.showOpenDialog(this.frame) == JFileChooser.APPROVE_OPTION)
+            this.openFile(chooser.getSelectedFile());
+    }
+
     private JPanel openFile(File file) {
         try {
             String title = file.getName();
@@ -280,8 +310,9 @@ public class EspressoPadView extends JPanel {
             JPanel tab = model.getTab();
             TextEditor textEditor = model.getTextEditor();
             textEditor.setText(Files.readString(file.toPath()));
+            model.setBackingFile(file);
             this.tabPane.insertTab(title, null, tab, null, this.tabPane.getTabCount() - 1);
-
+            this.tabPane.setSelectedComponent(tab);
             this.controller.setupClosableTabs(this.tabPane, title);
             this.controller.setupTextChangeListener(textEditor);
             this.viewModels.add(model);
