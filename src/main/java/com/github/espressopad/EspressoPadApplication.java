@@ -22,7 +22,7 @@ public class EspressoPadApplication {
         frame.setSize(new Dimension(800, 700));
         frame.add(root, BorderLayout.CENTER);
         frame.setLocationRelativeTo(null);
-        frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+        frame.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
         frame.setVisible(true);
     }
 }

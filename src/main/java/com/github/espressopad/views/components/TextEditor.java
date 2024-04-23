@@ -7,6 +7,7 @@ import org.fife.ui.rtextarea.RTextScrollPane;
 public class TextEditor extends RSyntaxTextArea {
     private ViewModel viewModel;
     private RTextScrollPane scrollPane;
+    private boolean dirty = false;
 
     public TextEditor(ViewModel viewModel) {
         this();
@@ -38,5 +39,13 @@ public class TextEditor extends RSyntaxTextArea {
 
     public ViewModel getViewModel() {
         return this.viewModel;
+    }
+
+    public boolean isDirty() {
+        return this.dirty;
+    }
+
+    public void setDirty(boolean dirty) {
+        this.dirty = dirty;
     }
 }

@@ -1,6 +1,7 @@
 package com.github.espressopad.controller;
 
 import com.github.espressopad.io.ConsoleErrorStream;
+import com.github.espressopad.io.ConsoleInputStream;
 import com.github.espressopad.io.ConsoleOutputStream;
 import com.github.espressopad.models.ViewModel;
 import com.github.espressopad.views.components.FileTree;
@@ -20,21 +21,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.swing.*;
-import javax.swing.border.CompoundBorder;
-import javax.swing.event.CaretEvent;
-import javax.swing.event.CaretListener;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.text.BadLocationException;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.TreePath;
 import java.awt.Desktop;
-import java.awt.GridBagConstraints;
-import java.awt.GridBagLayout;
-import java.awt.Insets;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.File;
 import java.io.IOException;
@@ -50,54 +42,8 @@ public class EspressoPadController implements AutoCloseable {
     private final Logger logger = LoggerFactory.getLogger(EspressoPadController.class);
     private final DefaultCompletionProvider provider = new DefaultCompletionProvider();
 
-    public void setupClosableTabs(JTabbedPane tabPane, String title) {
-        int index = tabPane.indexOfTab(title);
-        JPanel pnlTab = new JPanel(new GridBagLayout());
-        pnlTab.setOpaque(false);
-        JLabel lblTitle = new JLabel(title);
-        JButton btnClose = new JButton("x");
-        CompoundBorder border = BorderFactory.createCompoundBorder(BorderFactory
-                .createEmptyBorder(), BorderFactory.createEmptyBorder(0, 2, 0, 2));
-        btnClose.setBorder(border);
-        btnClose.setContentAreaFilled(false);
-        btnClose.setFocusable(false);
-        btnClose.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                setupRemoveTab(tabPane);
-            }
-        });
-
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        gbc.weightx = 1;
-        gbc.insets = new Insets(0, 10, 0, 1);
-
-        pnlTab.add(lblTitle, gbc);
-
-        gbc.gridx++;
-        gbc.weightx = 0;
-        pnlTab.add(btnClose, gbc);
-
-        tabPane.setTabComponentAt(index, pnlTab);
-    }
-
-    public void setupMiddleMouseListener(JTabbedPane tabPane) {
-        tabPane.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                if (tabPane.getBoundsAt(tabPane.getSelectedIndex()).contains(e.getPoint()) &&
-                        SwingUtilities.isMiddleMouseButton(e))
-                    setupRemoveTab(tabPane);
-            }
-        });
-    }
-
-    public void setupRemoveTab(JTabbedPane tabPane) {
-        if (tabPane.getTabCount() <= 2) return;
-        tabPane.remove(tabPane.getSelectedComponent());
-        tabPane.setSelectedComponent(tabPane.getComponentAt(tabPane.getTabCount() - 2));
+    public static JShell getShell() {
+        return shell;
     }
 
     public void setupTextChangeListener(TextEditor textEditor) {
@@ -107,125 +53,110 @@ public class EspressoPadController implements AutoCloseable {
         ac.setAutoActivationEnabled(true);
         ac.setShowDescWindow(true);
         ac.install(textEditor);
-        textEditor.addCaretListener(new CaretListener() {
-            @Override
-            public void caretUpdate(CaretEvent e) {
-                textEditor.getViewModel().getStatusBar().setCharacterPosition(
+        textEditor.addCaretListener(event -> this.setupCaretChangeEvent(textEditor));
+        textEditor.getDocument().addDocumentListener(new TextEditorListener(textEditor));
+    }
+
+    private void setupCaretChangeEvent(TextEditor textEditor) {
+        textEditor.getViewModel()
+                .getStatusBar()
+                .setCharacterPosition(
                         String.format("%d:%d", textEditor.getCaretLineNumber() + 1, textEditor.getCaretOffsetFromLineStart() + 1)
                 );
-            }
-        });
-        textEditor.getDocument().addDocumentListener(new DocumentListener() {
-            @Override
-            public void insertUpdate(DocumentEvent e) {
-                setupTextChangeEvent(textEditor);
-            }
-
-            @Override
-            public void removeUpdate(DocumentEvent e) {
-                setupTextChangeEvent(textEditor);
-            }
-
-            @Override
-            public void changedUpdate(DocumentEvent e) {
-                setupTextChangeEvent(textEditor);
-            }
-        });
     }
 
     private void setupTextChangeEvent(TextEditor textEditor) {
-        Executors.newFixedThreadPool(3).submit(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    try {
-                        SourceCodeAnalysis.CompletionInfo completionInfo = shell.sourceCodeAnalysis()
-                                .analyzeCompletion(textEditor.getText());
-                        while (completionInfo.source() != null && !completionInfo.source().isBlank()) {
-                            if (completionInfo.completeness() != SourceCodeAnalysis.Completeness.COMPLETE) break;
-                            List<SnippetEvent> snippetEvents = shell.eval(completionInfo.source());
-                            for (SnippetEvent snippetEvent : snippetEvents) {
-                                switch (snippetEvent.snippet().kind()) {
-                                    case METHOD:
-                                        BodyDeclaration<?> body = StaticJavaParser.parseBodyDeclaration(snippetEvent.snippet().source());
-                                        body.asMethodDeclaration().getBody().ifPresent(x -> {
-                                            for (Statement st : x.getStatements())
-                                                shell.eval(st.toString());
-                                        });
-                                        break;
-                                    case STATEMENT:
-                                        Statement stmts = StaticJavaParser.parseStatement(snippetEvent.snippet().source());
-                                        if (stmts.isDoStmt()) {
-                                            DoStmt doStmt = stmts.asDoStmt();
-                                            for (Statement st : doStmt.getBody().asBlockStmt().getStatements())
-                                                shell.eval(st.toString());
-                                        } else if (stmts.isForEachStmt()) {
-                                            ForEachStmt forEachStmt = stmts.asForEachStmt();
-                                            for (Statement st : forEachStmt.getBody().asBlockStmt().getStatements())
-                                                shell.eval(st.toString());
-                                        } else if (stmts.isForStmt()) {
-                                            ForStmt forStmt = stmts.asForStmt();
-                                            for (Statement st : forStmt.getBody().asBlockStmt().getStatements())
-                                                shell.eval(st.toString());
-                                        } else if (stmts.isIfStmt()) {
-                                            IfStmt ifStmt = stmts.asIfStmt();
-                                            for (Statement st : ifStmt.getThenStmt().asBlockStmt().getStatements())
-                                                shell.eval(st.toString());
-                                        } else if (stmts.isSwitchStmt()) {
-                                            SwitchStmt switchStmt = stmts.asSwitchStmt();
-                                            for (SwitchEntry switchEntry : switchStmt.getEntries())
-                                                for (Statement st : switchEntry.getStatements())
-                                                    shell.eval(st.toString());
-                                        } else if (stmts.isSynchronizedStmt()) {
-                                            SynchronizedStmt syncStmt = stmts.asSynchronizedStmt();
-                                            for (Statement st : syncStmt.getBody().asBlockStmt().getStatements())
-                                                shell.eval(st.toString());
-                                        } else if (stmts.isTryStmt()) {
-                                            TryStmt tryStmt = stmts.asTryStmt();
-                                            for (Statement st : tryStmt.getTryBlock().asBlockStmt().getStatements())
-                                                shell.eval(st.toString());
-                                            for (CatchClause catchClause : tryStmt.getCatchClauses()) {
-                                                for (Statement st : catchClause.getBody().getStatements())
-                                                    shell.eval(st.toString());
-                                            }
-                                            tryStmt.getFinallyBlock().ifPresent(x -> {
-                                                for (Statement st : x.getStatements())
-                                                    shell.eval(st.toString());
-                                            });
-                                        } else if (stmts.isWhileStmt()) {
-                                            WhileStmt whileStmt = stmts.asWhileStmt();
-                                            for (Statement st : whileStmt.getBody().asBlockStmt().getStatements())
-                                                shell.eval(st.toString());
-                                        }
-                                        break;
+        Executors.newFixedThreadPool(3).submit(() -> this.onChangeEvent(textEditor));
+    }
+
+    private void onChangeEvent(TextEditor textEditor) {
+        try {
+            textEditor.setDirty(true);
+            SourceCodeAnalysis.CompletionInfo completionInfo = shell.sourceCodeAnalysis()
+                    .analyzeCompletion(textEditor.getText());
+            while (completionInfo.source() != null && !completionInfo.source().isBlank()) {
+                if (completionInfo.completeness() != SourceCodeAnalysis.Completeness.COMPLETE) break;
+                List<SnippetEvent> snippetEvents = shell.eval(completionInfo.source());
+                for (SnippetEvent snippetEvent : snippetEvents) {
+                    switch (snippetEvent.snippet().kind()) {
+                        case METHOD:
+                            BodyDeclaration<?> body = StaticJavaParser.parseBodyDeclaration(snippetEvent.snippet().source());
+                            body.asMethodDeclaration().getBody().ifPresent(x -> {
+                                for (Statement st : x.getStatements())
+                                    shell.eval(st.toString());
+                            });
+                            break;
+                        case STATEMENT:
+                            Statement stmts = StaticJavaParser.parseStatement(snippetEvent.snippet().source());
+                            if (stmts.isDoStmt()) {
+                                DoStmt doStmt = stmts.asDoStmt();
+                                for (Statement st : doStmt.getBody().asBlockStmt().getStatements())
+                                    shell.eval(st.toString());
+                            } else if (stmts.isForEachStmt()) {
+                                ForEachStmt forEachStmt = stmts.asForEachStmt();
+                                for (Statement st : forEachStmt.getBody().asBlockStmt().getStatements())
+                                    shell.eval(st.toString());
+                            } else if (stmts.isForStmt()) {
+                                ForStmt forStmt = stmts.asForStmt();
+                                for (Statement st : forStmt.getBody().asBlockStmt().getStatements())
+                                    shell.eval(st.toString());
+                            } else if (stmts.isIfStmt()) {
+                                IfStmt ifStmt = stmts.asIfStmt();
+                                for (Statement st : ifStmt.getThenStmt().asBlockStmt().getStatements())
+                                    shell.eval(st.toString());
+                            } else if (stmts.isSwitchStmt()) {
+                                SwitchStmt switchStmt = stmts.asSwitchStmt();
+                                for (SwitchEntry switchEntry : switchStmt.getEntries())
+                                    for (Statement st : switchEntry.getStatements())
+                                        shell.eval(st.toString());
+                            } else if (stmts.isSynchronizedStmt()) {
+                                SynchronizedStmt syncStmt = stmts.asSynchronizedStmt();
+                                for (Statement st : syncStmt.getBody().asBlockStmt().getStatements())
+                                    shell.eval(st.toString());
+                            } else if (stmts.isTryStmt()) {
+                                TryStmt tryStmt = stmts.asTryStmt();
+                                for (Statement st : tryStmt.getTryBlock().asBlockStmt().getStatements())
+                                    shell.eval(st.toString());
+                                for (CatchClause catchClause : tryStmt.getCatchClauses()) {
+                                    for (Statement st : catchClause.getBody().getStatements())
+                                        shell.eval(st.toString());
                                 }
+                                tryStmt.getFinallyBlock().ifPresent(x -> {
+                                    for (Statement st : x.getStatements())
+                                        shell.eval(st.toString());
+                                });
+                            } else if (stmts.isWhileStmt()) {
+                                WhileStmt whileStmt = stmts.asWhileStmt();
+                                for (Statement st : whileStmt.getBody().asBlockStmt().getStatements())
+                                    shell.eval(st.toString());
                             }
-                            if (!completionInfo.remaining().isBlank())
-                                completionInfo = shell.sourceCodeAnalysis().analyzeCompletion(completionInfo.remaining());
-                            else break;
-                        }
-                    } catch (IllegalStateException e) {
+                            break;
                     }
-                    int lineStartOffsetOfCurrentLine = textEditor.getLineStartOffsetOfCurrentLine();
-                    String currentLine = textEditor.getText(lineStartOffsetOfCurrentLine,
-                            textEditor.getCaretPosition() - lineStartOffsetOfCurrentLine);
-                    List<SourceCodeAnalysis.Suggestion> completionSuggestions = shell.sourceCodeAnalysis()
-                            .completionSuggestions(currentLine, currentLine.length(), new int[1]);
+                }
+                if (!completionInfo.remaining().isBlank())
+                    completionInfo = shell.sourceCodeAnalysis().analyzeCompletion(completionInfo.remaining());
+                else break;
+            }
+
+            int lineStartOffsetOfCurrentLine = textEditor.getLineStartOffsetOfCurrentLine();
+            String currentLine = textEditor.getText(lineStartOffsetOfCurrentLine,
+                    textEditor.getCaretPosition() - lineStartOffsetOfCurrentLine);
+            List<SourceCodeAnalysis.Suggestion> completionSuggestions = shell.sourceCodeAnalysis()
+                    .completionSuggestions(currentLine, currentLine.length(), new int[1]);
                     /*Trie trie = new Trie();
                     trie.addAll(completionSuggestions.stream().map(SourceCodeAnalysis.Suggestion::continuation)
                             .collect(Collectors.toList()));
                     List<String> completed = trie.findCompletions(currentLine);*/
-                    if (provider.getCompletions(textEditor) != null) {
-                        for (Completion completion : provider.getCompletions(textEditor))
-                            provider.removeCompletion(completion);
-                    }
-                    for (SourceCodeAnalysis.Suggestion suggestion : completionSuggestions)
-                        provider.addCompletion(new BasicCompletion(provider, suggestion.continuation()));
-                } catch (BadLocationException e) {
-                    throw new RuntimeException(e);
-                }
+            if (provider.getCompletions(textEditor) != null) {
+                for (Completion completion : provider.getCompletions(textEditor))
+                    provider.removeCompletion(completion);
             }
-        });
+            for (SourceCodeAnalysis.Suggestion suggestion : completionSuggestions)
+                provider.addCompletion(new BasicCompletion(provider, suggestion.continuation()));
+        } catch (IllegalStateException e) {
+        } catch (BadLocationException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public File setupTreeMouseListener(FileTree fileTree, MouseEvent event) {
@@ -266,17 +197,26 @@ public class EspressoPadController implements AutoCloseable {
     }
 
     private void renameFile(FileTree fileTree, File file) {
-        String newName = JOptionPane.showInputDialog(fileTree, String.format("Rename %s", file.getName()), file.getName());
-        if (newName != null && !newName.isBlank()) {
-            file.renameTo(file.toPath().getParent().resolve(newName).toFile());
+        Object newName = JOptionPane.showInputDialog(
+                JOptionPane.getFrameForComponent(fileTree),
+                String.format("Rename %s?", file.getName()),
+                "Rename file?",
+                JOptionPane.QUESTION_MESSAGE,
+                UIManager.getIcon("OptionPane.questionIcon"),
+                null,
+                file.getName()
+        );
+        String s = String.valueOf(newName);
+        if (newName != null && !s.isBlank()) {
+            file.renameTo(file.toPath().getParent().resolve(s).toFile());
             fileTree.refreshTree();
         }
     }
 
     private void deleteFile(FileTree fileTree, File file) {
         if (JOptionPane.showConfirmDialog(
-                fileTree,
-                String.format("Delete file %s", file.getName()),
+                JOptionPane.getFrameForComponent(fileTree),
+                String.format("Delete file %s?", file.getName()),
                 "Delete file?",
                 JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION) {
             file.delete();
@@ -299,16 +239,18 @@ public class EspressoPadController implements AutoCloseable {
         JEditorPane editorPane = viewModel.getResultView();
         JProgressBar progressBar = viewModel.getStatusBar().getProgressBar();
         progressBar.setIndeterminate(true);
+        viewModel.getStatusBar().setStatusLabel("Running");
         Executors.newSingleThreadExecutor().submit(new Runnable() {
             @Override
             public void run() {
                 try (ConsoleOutputStream consoleOutputStream = new ConsoleOutputStream(editorPane);
                      ConsoleErrorStream consoleErrorStream = new ConsoleErrorStream(editorPane);
+                     ConsoleInputStream consoleInputStream = new ConsoleInputStream(viewModel.getStatusBar());
                      PrintStream out = new PrintStream(consoleOutputStream);
                      PrintStream errStream = new PrintStream(consoleErrorStream);
-                     JShell shell = JShell.builder().out(out).err(errStream).build()) {
+                     JShell shell = JShell.builder().out(out).err(errStream).in(consoleInputStream).build()) {
                     SourceCodeAnalysis.CompletionInfo completion = shell.sourceCodeAnalysis().analyzeCompletion(code);
-                    /*List<SnippetEvent> l = shell.eval(handler.parseImportXml()
+                    /*TODO List<SnippetEvent> l = shell.eval(handler.parseImportXml()
                             .stream()
                             .map(imports -> String.format("import %s;", imports))
                             .collect(Collectors.joining()));*/
@@ -353,6 +295,7 @@ public class EspressoPadController implements AutoCloseable {
                 } finally {
                     progressBar.setValue(progressBar.getMinimum());
                     progressBar.setIndeterminate(false);
+                    viewModel.getStatusBar().setStatusLabel("Ready");
                 }
             }
         });
@@ -361,5 +304,29 @@ public class EspressoPadController implements AutoCloseable {
     @Override
     public void close() {
         shell.close();
+    }
+
+
+    class TextEditorListener implements DocumentListener {
+        private final TextEditor textEditor;
+
+        TextEditorListener(TextEditor textEditor) {
+            this.textEditor = textEditor;
+        }
+
+        @Override
+        public void insertUpdate(DocumentEvent e) {
+            setupTextChangeEvent(this.textEditor);
+        }
+
+        @Override
+        public void removeUpdate(DocumentEvent e) {
+            setupTextChangeEvent(this.textEditor);
+        }
+
+        @Override
+        public void changedUpdate(DocumentEvent e) {
+            setupTextChangeEvent(this.textEditor);
+        }
     }
 }

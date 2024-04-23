@@ -17,6 +17,8 @@ import org.fife.ui.rtextarea.SearchResult;
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.text.BadLocationException;
+import java.awt.Frame;
+import java.awt.Toolkit;
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -52,43 +54,53 @@ public class TextEditorController {
         textEditor.selectAll();
     }
 
-    public void findAction(JFrame frame, TextEditor textEditor, StatusBar statusBar) {
+    public void findAction(TextEditor textEditor, StatusBar statusBar) {
         if (this.replaceDialog != null && this.replaceDialog.isVisible())
             this.replaceDialog.setVisible(false);
 
-        this.findDialog = new FindDialog(frame, new TextEditorSearchListener(frame, textEditor, statusBar));
+        Frame frame = JOptionPane.getFrameForComponent(textEditor);
+        this.findDialog = new FindDialog(frame, new TextEditorSearchListener(textEditor, statusBar));
         this.findDialog.setVisible(true);
     }
 
-    public void replaceAction(JFrame frame, TextEditor textEditor, StatusBar statusBar) {
+    public void replaceAction(TextEditor textEditor, StatusBar statusBar) {
         if (this.findDialog != null && this.findDialog.isVisible())
             this.findDialog.setVisible(false);
-
-        this.replaceDialog = new ReplaceDialog(frame, new TextEditorSearchListener(frame, textEditor, statusBar));
+        Frame frame = JOptionPane.getFrameForComponent(textEditor);
+        this.replaceDialog = new ReplaceDialog(frame, new TextEditorSearchListener(textEditor, statusBar));
         this.replaceDialog.setVisible(true);
     }
 
-    public void goToLineAction(JFrame frame, TextEditor textEditor) {
+    public void setupGoToLine(TextEditor textEditor) {
+        Frame frame = JOptionPane.getFrameForComponent(textEditor);
         if (this.findDialog != null && this.findDialog.isVisible())
             this.findDialog.setVisible(false);
 
         if (this.replaceDialog != null && this.replaceDialog.isVisible())
             this.replaceDialog.setVisible(false);
 
-        String goTo = JOptionPane.showInputDialog(frame, "Go to line");
+        Object goTo = JOptionPane.showInputDialog(
+                frame,
+                "Go to line",
+                "Go to line",
+                JOptionPane.QUESTION_MESSAGE,
+                UIManager.getIcon("OptionPane.questionIcon"),
+                null,
+                textEditor.getCaretLineNumber() + 1
+                );
         if (goTo != null) {
             SwingUtilities.invokeLater(new Runnable() {
                 @Override
                 public void run() {
                     try {
-                        int y = Integer.parseInt(goTo) - 1;
+                        int y = Integer.parseInt(String.valueOf(goTo)) - 1;
                         textEditor.getScrollPane().getVerticalScrollBar().setValue(textEditor.yForLine(y));
                         textEditor.setCaretPosition(textEditor.getLineStartOffset(y));
                         textEditor.requestFocusInWindow();
-                    } catch (BadLocationException e) {
-                        throw new RuntimeException(e);
-                    } catch (NumberFormatException nfe) {
+                    } catch (BadLocationException | NumberFormatException e) {
+                        Toolkit.getDefaultToolkit().beep();
                         JOptionPane.showMessageDialog(frame, "Invalid line", "Go to line", JOptionPane.ERROR_MESSAGE);
+                        throw new RuntimeException(e);
                     }
                 }
             });
@@ -137,39 +149,49 @@ public class TextEditorController {
         }
     }
 
-    public void saveFile(ViewModel viewModel) {
+    /**
+     * Never call this method
+     */
+    public File saveFile(ViewModel viewModel) {
         try {
             File backingFile = viewModel.getBackingFile();
             if (backingFile == null)
-                this.saveFileAs(viewModel);
+                backingFile = this.saveFileAs(viewModel);
             else
                 Files.writeString(backingFile.toPath(), viewModel.getTextEditor().getText());
+            viewModel.getTextEditor().setDirty(false);
+            return backingFile;
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
-    public void saveFileAs(ViewModel viewModel) {
+    /**
+     * Never call this method
+     */
+    public File saveFileAs(ViewModel viewModel) {
         try {
             JFileChooser chooser = new JFileChooser();
             chooser.setFileFilter(new FileNameExtensionFilter("JSH file", "jsh"));
             if (chooser.showSaveDialog(viewModel.getTab()) == JFileChooser.APPROVE_OPTION) {
                 File selectedFile = chooser.getSelectedFile();
                 String fileName = selectedFile.getName() + ".jsh";
-                Files.writeString(Path.of(selectedFile.getParent(), fileName), viewModel.getTextEditor().getText());
+                Path path = Path.of(selectedFile.getParent(), fileName);
+                Files.writeString(path, viewModel.getTextEditor().getText());
+                viewModel.getTextEditor().setDirty(false);
+                return path.toFile();
             }
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+        return null;
     }
 
     private class TextEditorSearchListener implements SearchListener {
         private final TextEditor textEditor;
-        private final JFrame frame;
         private final StatusBar statusBar;
 
-        TextEditorSearchListener(JFrame frame, TextEditor textEditor, StatusBar statusBar) {
-            this.frame = frame;
+        TextEditorSearchListener(TextEditor textEditor, StatusBar statusBar) {
             this.textEditor = textEditor;
             this.statusBar = statusBar;
         }
@@ -197,7 +219,11 @@ public class TextEditorController {
                     break;
                 case REPLACE_ALL:
                     result = SearchEngine.replaceAll(this.textEditor, context);
-                    JOptionPane.showMessageDialog(this.frame, String.format("%d occurrences replaced.", result.getCount()));
+                    JOptionPane.showMessageDialog(
+                            JOptionPane.getFrameForComponent(textEditor),
+                            String.format("%d occurrences replaced.",
+                                    result.getCount())
+                    );
                     break;
             }
 

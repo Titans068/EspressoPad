@@ -1,9 +1,9 @@
-package com.github.espressopad.xml;
+package com.github.espressopad.utils;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class HtmlHandler {
+public class HtmlUtils {
 
     public static String convertJavaDoc(String input) {
         // Define regular expressions for JavaDoc tags
