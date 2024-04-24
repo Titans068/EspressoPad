@@ -257,7 +257,7 @@ public class EspressoPadView extends JPanel {
 
         JMenu toolsMenu = new JMenu("Tools");
         JMenuItem settingsMenuItem = new JMenuItem("Settings");
-        settingsMenuItem.addActionListener(event -> new SettingsView().show(this.frame));
+        settingsMenuItem.addActionListener(event -> new SettingsView(this.getCurrentTextEditor()).show());
         toolsMenu.add(settingsMenuItem);
 
         JMenu helpMenu = new JMenu("Help");

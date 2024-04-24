@@ -137,7 +137,9 @@ public class EspressoPadController implements AutoCloseable {
                     completionInfo = shell.sourceCodeAnalysis().analyzeCompletion(completionInfo.remaining());
                 else break;
             }
-
+        } catch (IllegalStateException e) {
+        }
+        try {
             int lineStartOffsetOfCurrentLine = textEditor.getLineStartOffsetOfCurrentLine();
             String currentLine = textEditor.getText(lineStartOffsetOfCurrentLine,
                     textEditor.getCaretPosition() - lineStartOffsetOfCurrentLine);
@@ -153,7 +155,6 @@ public class EspressoPadController implements AutoCloseable {
             }
             for (SourceCodeAnalysis.Suggestion suggestion : completionSuggestions)
                 provider.addCompletion(new BasicCompletion(provider, suggestion.continuation()));
-        } catch (IllegalStateException e) {
         } catch (BadLocationException e) {
             throw new RuntimeException(e);
         }

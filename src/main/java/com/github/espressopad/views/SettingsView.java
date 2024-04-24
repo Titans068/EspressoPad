@@ -3,8 +3,11 @@ package com.github.espressopad.views;
 import com.github.espressopad.controller.EspressoPadController;
 import com.github.espressopad.controller.SettingsController;
 import com.github.espressopad.models.ArtifactModel;
+import com.github.espressopad.utils.Utils;
 import com.github.espressopad.views.components.PlaceHolderTextField;
+import com.github.espressopad.views.components.TextEditor;
 import com.squareup.tools.maven.resolution.ResolvedArtifact;
+import org.fife.ui.rsyntaxtextarea.Theme;
 import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
 import org.kordamp.ikonli.swing.FontIcon;
 import org.slf4j.Logger;
@@ -16,13 +19,17 @@ import javax.swing.event.ListDataListener;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
 import java.io.IOException;
-import java.util.Collections;
+import java.io.InputStream;
 import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 public class SettingsView {
     private final Logger logger = LoggerFactory.getLogger(SettingsView.class);
     private final SettingsController controller = new SettingsController();
     private final JTabbedPane view = new JTabbedPane();
+    private JDialog dialog;
     private JRadioButton searchDependencyRadio;
     private JButton searchDependencyBtn;
     private JRadioButton pickJarRadio;
@@ -42,11 +49,27 @@ public class SettingsView {
     private JList<String> importList;
     private JButton removeImportBtn;
     private JButton saveImportBtn;
+    private JSpinner fontSizeSpinner;
+    private JComboBox<Font> fontComboBox;
+    private JComboBox<UIManager.LookAndFeelInfo> lafComboBox;
+    private JComboBox<String> textEditorThemeComboBox;
+    private JButton saveAppearanceButton;
+    private TextEditor textEditor;
+    private SpinnerModel fontSizeModel;
     private final DefaultListModel<String> searchResultsModel = new DefaultListModel<>();
     private final DefaultListModel<String> installedArtifactModel = new DefaultListModel<>();
     private final DefaultListModel<String> importsModel = new DefaultListModel<>();
+    private final List<String> textEditorThemeList = List.of("Default", "Default (System Selection)", "Dark", "Druid",
+            "Monokai", "Eclipse", "IDEA", "Visual Studio");
+    private final Map<String, String> textEditorThemes = IntStream.range(0, this.textEditorThemeList.size()).boxed()
+            .collect(Collectors.toMap(this.textEditorThemeList::get, List.of(
+                    "default.xml",  "default-alt.xml", "dark.xml", "druid.xml", "monokai.xml",
+                    "eclipse.xml", "idea.xml", "vs.xml"
+            )::get));
 
-    public SettingsView() {
+    public SettingsView(TextEditor textEditor) {
+        this.textEditor = textEditor;
+        this.setupAppearance();
         this.setupDependenciesView();
         this.setupImportsManagement();
         this.deactivatePickJar();
@@ -55,21 +78,111 @@ public class SettingsView {
         this.toggleRemoveImportButtonState();
     }
 
-    public void show(JFrame parent) {
-        JDialog dialog = new JDialog(parent, "Settings", true);
-        dialog.setSize(new Dimension(700, 500));
-        dialog.setContentPane(this.view);
-        dialog.setLocationRelativeTo(parent);
-        dialog.setVisible(true);
+    public void show() {
+        Frame frame = JOptionPane.getFrameForComponent(textEditor);
+        this.dialog = new JDialog(frame, "Settings", true);
+        this.dialog.setSize(new Dimension(700, 500));
+        this.dialog.setContentPane(this.view);
+        this.dialog.setLocationRelativeTo(frame);
+        this.dialog.setVisible(true);
+    }
+
+    private void setupAppearance() {
+        JPanel panel = new JPanel(new GridBagLayout());
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.insets = new Insets(5, 5, 5, 5);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        panel.add(new JLabel("Editor Font size"), gbc);
+        gbc.gridx = 1;
+        this.fontSizeModel = new SpinnerNumberModel(this.textEditor.getFont().getSize(), 8, 36, 1);
+        this.fontSizeSpinner = new JSpinner(this.fontSizeModel);
+        panel.add(this.fontSizeSpinner, gbc);
+        gbc.gridx = 0;
+        gbc.gridy = 1;
+        panel.add(new JLabel("Editor Font"), gbc);
+        gbc.gridx = 1;
+        this.fontComboBox = new JComboBox<>(new Vector<>(Utils.getMonospaceFonts()));
+        this.fontComboBox.setRenderer(new DefaultListCellRenderer() {
+            @Override
+            public Component getListCellRendererComponent(
+                    JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus
+            ) {
+                value = ((Font) value).getName();
+                return super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+            }
+        });
+        for (int i = 0; i < this.fontComboBox.getItemCount(); i++) {
+            if (Objects.equals(this.fontComboBox.getItemAt(i).getName(), this.textEditor.getFont().getName())) {
+                this.fontComboBox.setSelectedIndex(i);
+                break;
+            }
+        }
+        panel.add(this.fontComboBox, gbc);
+        gbc.gridx = 0;
+        gbc.gridy = 2;
+        panel.add(new JLabel("Editor theme"), gbc);
+        gbc.gridx = 1;
+        this.textEditorThemeComboBox = new JComboBox<>(new Vector<>(this.textEditorThemeList));
+        panel.add(this.textEditorThemeComboBox, gbc);
+        gbc.gridx = 0;
+        gbc.gridy = 3;
+        panel.add(new JLabel("Change look and feel"), gbc);
+        gbc.gridx = 1;
+        this.lafComboBox = new JComboBox<>(UIManager.getInstalledLookAndFeels());
+        this.lafComboBox.setRenderer(new DefaultListCellRenderer() {
+            @Override
+            public Component getListCellRendererComponent(
+                    JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus
+            ) {
+                value = ((UIManager.LookAndFeelInfo) value).getName();
+                return super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+            }
+        });
+        for (int i = 0; i < this.lafComboBox.getItemCount(); i++) {
+            UIManager.LookAndFeelInfo lookAndFeelInfo = this.lafComboBox.getItemAt(i);
+            if (lookAndFeelInfo.getClassName().equals(UIManager.getLookAndFeel().getClass().getName())) {
+                this.lafComboBox.setSelectedIndex(i);
+                break;
+            }
+        }
+        panel.add(this.lafComboBox, gbc);
+        gbc.gridy = 4;
+        this.saveAppearanceButton = new JButton();
+        this.saveAppearanceButton.setIcon(FontIcon.of(FontAwesomeSolid.SAVE, 15));
+        this.saveAppearanceButton.addActionListener(event -> this.saveAppearanceChanges());
+        panel.add(this.saveAppearanceButton, gbc);
+
+        this.view.addTab("Appearance", panel);
+    }
+
+    private void saveAppearanceChanges() {
+        try {
+            this.textEditor.setFont(((Font)this.fontComboBox.getSelectedItem()).deriveFont(
+                    Float.parseFloat(String.valueOf(this.fontSizeSpinner.getValue())))
+            );
+            InputStream in = this.getClass().getResourceAsStream(String.format("/org/fife/ui/rsyntaxtextarea/themes/%s",
+                    this.textEditorThemes.get(this.textEditorThemeComboBox.getSelectedItem())));
+            Theme theme = Theme.load(in);
+            theme.apply(this.textEditor);
+            UIManager.setLookAndFeel(((UIManager.LookAndFeelInfo)this.lafComboBox.getSelectedItem()).getClassName());
+            SwingUtilities.updateComponentTreeUI(this.dialog);
+            SwingUtilities.updateComponentTreeUI(JOptionPane.getFrameForComponent(this.textEditor));
+            //TODO: Save to file
+        } catch (IOException | UnsupportedLookAndFeelException | ClassNotFoundException | InstantiationException |
+                 IllegalAccessException ioe) {
+            throw new RuntimeException(ioe);
+        }
     }
 
     private void setupDependenciesView() {
-        JPanel panel1 = new JPanel();
-        panel1.setLayout(new BorderLayout(0, 0));
+        JPanel panel = new JPanel();
+        panel.setLayout(new BorderLayout(0, 0));
         JPanel panel2 = new JPanel();
         panel2.setLayout(new GridBagLayout());
         panel2.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
-        panel1.add(panel2, BorderLayout.NORTH);
+        panel.add(panel2, BorderLayout.NORTH);
         this.searchDependencyRadio = new JRadioButton();
         this.searchDependencyRadio.setSelected(true);
         this.searchDependencyRadio.setText("Search for dependencies");
@@ -166,7 +279,7 @@ public class SettingsView {
         panel4.setLayout(new GridBagLayout());
         panel4.setPreferredSize(new Dimension(78, 300));
         panel4.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
-        panel1.add(panel4, BorderLayout.CENTER);
+        panel.add(panel4, BorderLayout.CENTER);
         this.searchResultsModel.addListDataListener(new SearchResultsDataListener());
         this.searchResultsList = new JList<>();
         this.searchResultsList.setBorder(BorderFactory.createTitledBorder("Search Results"));
@@ -216,7 +329,7 @@ public class SettingsView {
         gbc.fill = GridBagConstraints.HORIZONTAL;
         panel5.add(this.saveInstalledArtifactBtn, gbc);
 
-        this.view.addTab("Manage Dependencies", panel1);
+        this.view.addTab("Manage Dependencies", panel);
         this.view.setTabPlacement(SwingConstants.LEFT);
     }
 
@@ -365,7 +478,7 @@ public class SettingsView {
             if (resolvedArtifact != null) {
                 this.searchResultsModel.addElement(
                         String.format("%s - %s - %s", resolvedArtifact.getModel().getName(),
-                        resolvedArtifact.getModel().getDescription(), resolvedArtifact.getCoordinate()));
+                                resolvedArtifact.getModel().getDescription(), resolvedArtifact.getCoordinate()));
                 this.saveInstalledArtifactBtn.setEnabled(true);
             } else {
                 this.searchResultsModel.addElement(String.format("No results found for %s", dependencyString));
