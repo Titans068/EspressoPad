@@ -4,6 +4,7 @@ import com.github.espressopad.io.ConsoleErrorStream;
 import com.github.espressopad.io.ConsoleInputStream;
 import com.github.espressopad.io.ConsoleOutputStream;
 import com.github.espressopad.models.ViewModel;
+import com.github.espressopad.utils.XmlUtils;
 import com.github.espressopad.views.components.FileTree;
 import com.github.espressopad.views.components.TextEditor;
 import com.github.javaparser.StaticJavaParser;
@@ -37,10 +38,11 @@ import java.util.Locale;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
-public class EspressoPadController implements AutoCloseable {
+public class EspressoPadController {
     private static final JShell shell = JShell.builder().out(null).in(null).err(null).build();
     private final Logger logger = LoggerFactory.getLogger(EspressoPadController.class);
     private final DefaultCompletionProvider provider = new DefaultCompletionProvider();
+    private final XmlUtils handler = new XmlUtils();
 
     public static JShell getShell() {
         return shell;
@@ -51,7 +53,7 @@ public class EspressoPadController implements AutoCloseable {
         this.provider.setAutoActivationRules(true, ".");
         ac.setAutoCompleteEnabled(true);
         ac.setAutoActivationEnabled(true);
-        ac.setShowDescWindow(true);
+        //ac.setShowDescWindow(true);
         ac.install(textEditor);
         textEditor.addCaretListener(event -> this.setupCaretChangeEvent(textEditor));
         textEditor.getDocument().addDocumentListener(new TextEditorListener(textEditor));
@@ -138,6 +140,7 @@ public class EspressoPadController implements AutoCloseable {
                 else break;
             }
         } catch (IllegalStateException e) {
+            e.printStackTrace();
         }
         try {
             int lineStartOffsetOfCurrentLine = textEditor.getLineStartOffsetOfCurrentLine();
@@ -145,10 +148,7 @@ public class EspressoPadController implements AutoCloseable {
                     textEditor.getCaretPosition() - lineStartOffsetOfCurrentLine);
             List<SourceCodeAnalysis.Suggestion> completionSuggestions = shell.sourceCodeAnalysis()
                     .completionSuggestions(currentLine, currentLine.length(), new int[1]);
-                    /*Trie trie = new Trie();
-                    trie.addAll(completionSuggestions.stream().map(SourceCodeAnalysis.Suggestion::continuation)
-                            .collect(Collectors.toList()));
-                    List<String> completed = trie.findCompletions(currentLine);*/
+
             if (provider.getCompletions(textEditor) != null) {
                 for (Completion completion : provider.getCompletions(textEditor))
                     provider.removeCompletion(completion);
@@ -158,6 +158,15 @@ public class EspressoPadController implements AutoCloseable {
         } catch (BadLocationException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private String completeWord(String complete, String suggestion) {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < suggestion.length(); i++) {
+            if (i >= complete.length() || complete.charAt(i) != suggestion.charAt(i))
+                sb.append(suggestion.charAt(i));
+        }
+        return sb.toString();
     }
 
     public File setupTreeMouseListener(FileTree fileTree, MouseEvent event) {
@@ -251,10 +260,10 @@ public class EspressoPadController implements AutoCloseable {
                      PrintStream errStream = new PrintStream(consoleErrorStream);
                      JShell shell = JShell.builder().out(out).err(errStream).in(consoleInputStream).build()) {
                     SourceCodeAnalysis.CompletionInfo completion = shell.sourceCodeAnalysis().analyzeCompletion(code);
-                    /*TODO List<SnippetEvent> l = shell.eval(handler.parseImportXml()
+                    List<SnippetEvent> l = shell.eval(handler.parseImportXml()
                             .stream()
                             .map(imports -> String.format("import %s;", imports))
-                            .collect(Collectors.joining()));*/
+                            .collect(Collectors.joining()));
                     while (!completion.source().isBlank()) {
                         List<SnippetEvent> snippets = shell.eval(completion.source());
 
@@ -302,11 +311,9 @@ public class EspressoPadController implements AutoCloseable {
         });
     }
 
-    @Override
     public void close() {
         shell.close();
     }
-
 
     class TextEditorListener implements DocumentListener {
         private final TextEditor textEditor;
@@ -317,7 +324,7 @@ public class EspressoPadController implements AutoCloseable {
 
         @Override
         public void insertUpdate(DocumentEvent e) {
-            setupTextChangeEvent(this.textEditor);
+            //setupTextChangeEvent(this.textEditor);
         }
 
         @Override

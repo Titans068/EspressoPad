@@ -3,29 +3,26 @@ package com.github.espressopad.utils;
 import javax.swing.filechooser.FileSystemView;
 import java.awt.Font;
 import java.awt.GraphicsEnvironment;
-import java.awt.Label;
+import java.awt.RenderingHints;
+import java.awt.font.FontRenderContext;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class Utils {
     public static List<Font> getMonospaceFonts() {
-        Label th = new Label("1 l");
-        Label tk = new Label("MWX");
-
-        String[] fontFamilyList = GraphicsEnvironment.getLocalGraphicsEnvironment().getAvailableFontFamilyNames();
-        List<Font> mFamilyList = new ArrayList<>();
-
-        for (String fontFamilyName : fontFamilyList) {
-            Font font = new Font(fontFamilyName, Font.PLAIN, 14);
-            th.setFont(font);
-            tk.setFont(font);
-            if (th.getBounds().getWidth() == tk.getBounds().getWidth())
-                mFamilyList.add(font);
-        }
-        return mFamilyList;
+        FontRenderContext frc = new FontRenderContext(
+                null,
+                RenderingHints.VALUE_TEXT_ANTIALIAS_DEFAULT,
+                RenderingHints.VALUE_FRACTIONALMETRICS_DEFAULT
+        );
+        return Arrays.stream(GraphicsEnvironment.getLocalGraphicsEnvironment().getAllFonts())
+                .filter(font ->
+                        font.getStringBounds("i", frc).getWidth() == font.getStringBounds("m", frc).getWidth())
+                .collect(Collectors.toList());
     }
 
     public static Path validateDefaultDirectory() {

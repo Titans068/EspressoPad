@@ -14,7 +14,10 @@ import org.fife.ui.rtextarea.SearchContext;
 import org.fife.ui.rtextarea.SearchEngine;
 import org.fife.ui.rtextarea.SearchResult;
 
-import javax.swing.*;
+import javax.swing.JFileChooser;
+import javax.swing.JOptionPane;
+import javax.swing.SwingUtilities;
+import javax.swing.UIManager;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.text.BadLocationException;
 import java.awt.Frame;
@@ -87,7 +90,7 @@ public class TextEditorController {
                 UIManager.getIcon("OptionPane.questionIcon"),
                 null,
                 textEditor.getCaretLineNumber() + 1
-                );
+        );
         if (goTo != null) {
             SwingUtilities.invokeLater(new Runnable() {
                 @Override
@@ -221,8 +224,7 @@ public class TextEditorController {
                     result = SearchEngine.replaceAll(this.textEditor, context);
                     JOptionPane.showMessageDialog(
                             JOptionPane.getFrameForComponent(textEditor),
-                            String.format("%d occurrences replaced.",
-                                    result.getCount())
+                            String.format("%d occurrences replaced.", result.getCount())
                     );
                     break;
             }
@@ -234,9 +236,7 @@ public class TextEditorController {
                 if (result.getMarkedCount() > 0)
                     text = String.format("Occurrences marked: %d", result.getMarkedCount());
                 else text = "";
-            } else {
-                text = "Text not found";
-            }
+            } else text = "Text not found";
             this.statusBar.setFindOccurrencesLabel(text);
         }
 

@@ -4,6 +4,7 @@ import com.github.espressopad.controller.EspressoPadController;
 import com.github.espressopad.controller.SettingsController;
 import com.github.espressopad.models.ArtifactModel;
 import com.github.espressopad.utils.Utils;
+import com.github.espressopad.utils.XmlUtils;
 import com.github.espressopad.views.components.PlaceHolderTextField;
 import com.github.espressopad.views.components.TextEditor;
 import com.squareup.tools.maven.resolution.ResolvedArtifact;
@@ -28,6 +29,7 @@ import java.util.stream.IntStream;
 public class SettingsView {
     private final Logger logger = LoggerFactory.getLogger(SettingsView.class);
     private final SettingsController controller = new SettingsController();
+    private final XmlUtils handler = new XmlUtils();
     private final JTabbedPane view = new JTabbedPane();
     private JDialog dialog;
     private JRadioButton searchDependencyRadio;
@@ -54,7 +56,7 @@ public class SettingsView {
     private JComboBox<UIManager.LookAndFeelInfo> lafComboBox;
     private JComboBox<String> textEditorThemeComboBox;
     private JButton saveAppearanceButton;
-    private TextEditor textEditor;
+    private List<TextEditor> textEditors;
     private SpinnerModel fontSizeModel;
     private final DefaultListModel<String> searchResultsModel = new DefaultListModel<>();
     private final DefaultListModel<String> installedArtifactModel = new DefaultListModel<>();
@@ -63,12 +65,12 @@ public class SettingsView {
             "Monokai", "Eclipse", "IDEA", "Visual Studio");
     private final Map<String, String> textEditorThemes = IntStream.range(0, this.textEditorThemeList.size()).boxed()
             .collect(Collectors.toMap(this.textEditorThemeList::get, List.of(
-                    "default.xml",  "default-alt.xml", "dark.xml", "druid.xml", "monokai.xml",
+                    "default.xml", "default-alt.xml", "dark.xml", "druid.xml", "monokai.xml",
                     "eclipse.xml", "idea.xml", "vs.xml"
             )::get));
 
-    public SettingsView(TextEditor textEditor) {
-        this.textEditor = textEditor;
+    public SettingsView(List<TextEditor> textEditors) {
+        this.textEditors = textEditors;
         this.setupAppearance();
         this.setupDependenciesView();
         this.setupImportsManagement();
@@ -79,7 +81,7 @@ public class SettingsView {
     }
 
     public void show() {
-        Frame frame = JOptionPane.getFrameForComponent(textEditor);
+        Frame frame = JOptionPane.getFrameForComponent(this.textEditors.get(0));
         this.dialog = new JDialog(frame, "Settings", true);
         this.dialog.setSize(new Dimension(700, 500));
         this.dialog.setContentPane(this.view);
@@ -89,6 +91,7 @@ public class SettingsView {
 
     private void setupAppearance() {
         JPanel panel = new JPanel(new GridBagLayout());
+        Font font = this.textEditors.get(0).getFont();
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.gridx = 0;
         gbc.gridy = 0;
@@ -96,7 +99,7 @@ public class SettingsView {
         gbc.fill = GridBagConstraints.HORIZONTAL;
         panel.add(new JLabel("Editor Font size"), gbc);
         gbc.gridx = 1;
-        this.fontSizeModel = new SpinnerNumberModel(this.textEditor.getFont().getSize(), 8, 36, 1);
+        this.fontSizeModel = new SpinnerNumberModel(font.getSize(), 8, 36, 1);
         this.fontSizeSpinner = new JSpinner(this.fontSizeModel);
         panel.add(this.fontSizeSpinner, gbc);
         gbc.gridx = 0;
@@ -114,7 +117,7 @@ public class SettingsView {
             }
         });
         for (int i = 0; i < this.fontComboBox.getItemCount(); i++) {
-            if (Objects.equals(this.fontComboBox.getItemAt(i).getName(), this.textEditor.getFont().getName())) {
+            if (Objects.equals(this.fontComboBox.getItemAt(i).getName(), font.getName())) {
                 this.fontComboBox.setSelectedIndex(i);
                 break;
             }
@@ -159,16 +162,18 @@ public class SettingsView {
 
     private void saveAppearanceChanges() {
         try {
-            this.textEditor.setFont(((Font)this.fontComboBox.getSelectedItem()).deriveFont(
-                    Float.parseFloat(String.valueOf(this.fontSizeSpinner.getValue())))
-            );
             InputStream in = this.getClass().getResourceAsStream(String.format("/org/fife/ui/rsyntaxtextarea/themes/%s",
                     this.textEditorThemes.get(this.textEditorThemeComboBox.getSelectedItem())));
             Theme theme = Theme.load(in);
-            theme.apply(this.textEditor);
-            UIManager.setLookAndFeel(((UIManager.LookAndFeelInfo)this.lafComboBox.getSelectedItem()).getClassName());
+            for (TextEditor textEditor : this.textEditors) {
+                theme.apply(textEditor);
+                textEditor.setFont(((Font) this.fontComboBox.getSelectedItem()).deriveFont(
+                        Float.parseFloat(String.valueOf(this.fontSizeSpinner.getValue())))
+                );
+            }
+            UIManager.setLookAndFeel(((UIManager.LookAndFeelInfo) this.lafComboBox.getSelectedItem()).getClassName());
             SwingUtilities.updateComponentTreeUI(this.dialog);
-            SwingUtilities.updateComponentTreeUI(JOptionPane.getFrameForComponent(this.textEditor));
+            SwingUtilities.updateComponentTreeUI(JOptionPane.getFrameForComponent(this.textEditors.get(0)));
             //TODO: Save to file
         } catch (IOException | UnsupportedLookAndFeelException | ClassNotFoundException | InstantiationException |
                  IllegalAccessException ioe) {
@@ -416,7 +421,7 @@ public class SettingsView {
             for (String artifact : artifacts)
                 EspressoPadController.getShell().addToClasspath(artifact);
 
-            //TODO controller.getHandler().writeArtifactXml(artifacts);
+            this.handler.writeArtifactXml(artifacts);
             JOptionPane.showMessageDialog(
                     JOptionPane.getFrameForComponent(this.view),
                     "Artifacts added to classpath.",
@@ -439,7 +444,7 @@ public class SettingsView {
     }
 
     private void saveImports() {
-        //TODO save imports
+        this.handler.writeImportXml(Collections.list(this.importsModel.elements()));
     }
 
     private void deactivatePickJar() {
