@@ -33,6 +33,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.Executors;
@@ -46,6 +47,19 @@ public class EspressoPadController {
 
     public static JShell getShell() {
         return shell;
+    }
+
+    public void addArtifactsAndImports(JShell shell) {
+        if (this.handler.getArtifactFile().exists()) {
+            for (String s : handler.parseArtifactXml())
+                shell.addToClasspath(s);
+        }
+        if (!this.handler.getImportsFile().exists())
+            this.handler.writeImportXml(List.of("java.util.stream.*", "java.util.*", "java.io.*"));
+        else shell.eval(handler.parseImportXml()
+                .stream()
+                .map(imports -> String.format("import %s;", imports))
+                .collect(Collectors.joining()));
     }
 
     public void setupTextChangeListener(TextEditor textEditor) {
@@ -146,15 +160,41 @@ public class EspressoPadController {
             int lineStartOffsetOfCurrentLine = textEditor.getLineStartOffsetOfCurrentLine();
             String currentLine = textEditor.getText(lineStartOffsetOfCurrentLine,
                     textEditor.getCaretPosition() - lineStartOffsetOfCurrentLine);
-            List<SourceCodeAnalysis.Suggestion> completionSuggestions = shell.sourceCodeAnalysis()
+            List<SourceCodeAnalysis.Suggestion> suggestions = shell.sourceCodeAnalysis()
                     .completionSuggestions(currentLine, currentLine.length(), new int[1]);
-
-            if (provider.getCompletions(textEditor) != null) {
-                for (Completion completion : provider.getCompletions(textEditor))
-                    provider.removeCompletion(completion);
+            /*List<String> completedTokens = new ArrayList<>();
+            for (SourceCodeAnalysis.Suggestion suggestion : suggestions) {
+                String completed = this.completeWord(currentLine, suggestion.continuation());
+                if (currentLine.contains("."))
+                    completedTokens.add(
+                            StringEscapeUtils.unescapeJava(
+                                    currentLine.substring(0, currentLine.lastIndexOf('.') + 1) + completed
+                            )
+                    );
+                else
+                    completedTokens.add(StringEscapeUtils.unescapeJava(completed));
             }
-            for (SourceCodeAnalysis.Suggestion suggestion : completionSuggestions)
-                provider.addCompletion(new BasicCompletion(provider, suggestion.continuation()));
+            List<SourceCodeAnalysis.Documentation> documentationList = new ArrayList<>();
+            for (String completedToken : completedTokens) {
+                List<SourceCodeAnalysis.Documentation> documentation = shell.sourceCodeAnalysis().documentation(
+                        completedToken, completedToken.length(), true
+                );
+                documentationList.addAll(documentation);
+            }*/
+
+            provider.clear();
+            List<Completion> completions = new ArrayList<>();
+            for (int i = 0; i < suggestions.size(); i++) {
+                SourceCodeAnalysis.Suggestion suggestion = suggestions.get(i);
+                /*SourceCodeAnalysis.Documentation documentation = documentationList.get(i);
+                BasicCompletion basicCompletion = new BasicCompletion(
+                        provider, suggestion.continuation(), documentation.signature(),
+                        HtmlUtils.convertJavaDoc(documentation.javadoc())
+                );
+                completions.add(basicCompletion);*/
+                completions.add(new BasicCompletion(provider, suggestion.continuation()));
+            }
+            provider.addCompletions(completions);
         } catch (BadLocationException e) {
             throw new RuntimeException(e);
         }
@@ -259,6 +299,7 @@ public class EspressoPadController {
                      PrintStream out = new PrintStream(consoleOutputStream);
                      PrintStream errStream = new PrintStream(consoleErrorStream);
                      JShell shell = JShell.builder().out(out).err(errStream).in(consoleInputStream).build()) {
+                    addArtifactsAndImports(shell);
                     SourceCodeAnalysis.CompletionInfo completion = shell.sourceCodeAnalysis().analyzeCompletion(code);
                     List<SnippetEvent> l = shell.eval(handler.parseImportXml()
                             .stream()
@@ -329,7 +370,7 @@ public class EspressoPadController {
 
         @Override
         public void removeUpdate(DocumentEvent e) {
-            setupTextChangeEvent(this.textEditor);
+            //setupTextChangeEvent(this.textEditor);
         }
 
         @Override

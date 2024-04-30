@@ -2,10 +2,9 @@ package com.github.espressopad.models;
 
 import com.github.espressopad.views.components.StatusBar;
 import com.github.espressopad.views.components.TextEditor;
-import org.fife.ui.rtextarea.RTextScrollPane;
 
-import javax.swing.*;
-import java.awt.BorderLayout;
+import javax.swing.JEditorPane;
+import javax.swing.JPanel;
 import java.io.File;
 
 public class ViewModel {
@@ -34,18 +33,6 @@ public class ViewModel {
         if (tab == null)
             tab = new JPanel();
         this.tab = tab;
-        this.tab.setLayout(new BorderLayout());
-        double divider = .6d;
-        JPanel panel = new JPanel();
-        panel.setLayout(new BoxLayout(panel, BoxLayout.PAGE_AXIS));
-        panel.add(new JScrollPane(this.resultView));
-        panel.add(this.statusBar);
-        RTextScrollPane scrollPane = new RTextScrollPane(this.textEditor);
-        this.textEditor.setScrollPane(scrollPane);
-        JSplitPane splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, scrollPane, panel);
-        splitPane.setDividerLocation(divider);
-        splitPane.setResizeWeight(divider);
-        this.tab.add(splitPane, BorderLayout.CENTER);
     }
 
     public TextEditor getTextEditor() {

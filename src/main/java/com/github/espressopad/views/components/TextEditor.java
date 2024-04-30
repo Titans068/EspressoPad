@@ -21,7 +21,6 @@ public class TextEditor extends RSyntaxTextArea {
         this.setAnimateBracketMatching(true);
         this.setPaintMatchedBracketPair(true);
         this.setHighlightCurrentLine(true);
-        this.setCloseMarkupTags(true);
         this.setSyntaxEditingStyle(SYNTAX_STYLE_JAVA);
         this.setCodeFoldingEnabled(true);
         this.setLineWrap(true);

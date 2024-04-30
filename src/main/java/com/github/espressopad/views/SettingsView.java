@@ -56,7 +56,7 @@ public class SettingsView {
     private JComboBox<UIManager.LookAndFeelInfo> lafComboBox;
     private JComboBox<String> textEditorThemeComboBox;
     private JButton saveAppearanceButton;
-    private List<TextEditor> textEditors;
+    private final List<TextEditor> textEditors;
     private SpinnerModel fontSizeModel;
     private final DefaultListModel<String> searchResultsModel = new DefaultListModel<>();
     private final DefaultListModel<String> installedArtifactModel = new DefaultListModel<>();
@@ -162,20 +162,29 @@ public class SettingsView {
 
     private void saveAppearanceChanges() {
         try {
-            InputStream in = this.getClass().getResourceAsStream(String.format("/org/fife/ui/rsyntaxtextarea/themes/%s",
-                    this.textEditorThemes.get(this.textEditorThemeComboBox.getSelectedItem())));
-            Theme theme = Theme.load(in);
-            for (TextEditor textEditor : this.textEditors) {
-                theme.apply(textEditor);
-                textEditor.setFont(((Font) this.fontComboBox.getSelectedItem()).deriveFont(
-                        Float.parseFloat(String.valueOf(this.fontSizeSpinner.getValue())))
-                );
-            }
+            SwingUtilities.invokeLater(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        InputStream in = this.getClass().getResourceAsStream(String.format("/org/fife/ui/rsyntaxtextarea/themes/%s",
+                                textEditorThemes.get(textEditorThemeComboBox.getSelectedItem())));
+                        Theme theme = Theme.load(in);
+                        for (TextEditor textEditor : textEditors) {
+                            theme.apply(textEditor);
+                            textEditor.setFont(((Font) fontComboBox.getSelectedItem()).deriveFont(
+                                    Float.parseFloat(String.valueOf(fontSizeSpinner.getValue())))
+                            );
+                        }
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+            });
             UIManager.setLookAndFeel(((UIManager.LookAndFeelInfo) this.lafComboBox.getSelectedItem()).getClassName());
             SwingUtilities.updateComponentTreeUI(this.dialog);
             SwingUtilities.updateComponentTreeUI(JOptionPane.getFrameForComponent(this.textEditors.get(0)));
             //TODO: Save to file
-        } catch (IOException | UnsupportedLookAndFeelException | ClassNotFoundException | InstantiationException |
+        } catch (UnsupportedLookAndFeelException | ClassNotFoundException | InstantiationException |
                  IllegalAccessException ioe) {
             throw new RuntimeException(ioe);
         }
@@ -303,6 +312,8 @@ public class SettingsView {
         gbc.fill = GridBagConstraints.HORIZONTAL;
         gbc.weightx = .1;
         panel4.add(this.addArtifactButton, gbc);
+        if (this.handler.getArtifactFile().exists())
+            this.installedArtifactModel.addAll(this.handler.parseArtifactXml());
         this.installedArtifactModel.addListDataListener(new InstalledArtifactsDataListener());
         this.installedArtifactsList = new JList<>();
         this.installedArtifactsList.setBorder(BorderFactory.createTitledBorder("Installed Artifacts"));
@@ -359,6 +370,7 @@ public class SettingsView {
         gbc.weightx = .1;
         gbc.fill = GridBagConstraints.HORIZONTAL;
         panel.add(this.addImportBtn, gbc);
+        this.importsModel.addAll(this.handler.parseImportXml());
         this.importsModel.addListDataListener(new ImportsDataListener());
         this.importList = new JList<>();
         this.importList.setBorder(BorderFactory.createTitledBorder("Default Imports"));

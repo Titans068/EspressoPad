@@ -1,11 +1,19 @@
 package com.github.espressopad.views;
 
+import bibliothek.gui.DockFrontend;
+import bibliothek.gui.Dockable;
+import bibliothek.gui.dock.DefaultDockable;
+import bibliothek.gui.dock.SplitDockStation;
+import bibliothek.gui.dock.event.DockFrontendAdapter;
+import bibliothek.gui.dock.station.split.SplitDockProperty;
 import com.github.espressopad.controller.EspressoPadController;
 import com.github.espressopad.controller.TextEditorController;
 import com.github.espressopad.models.ViewModel;
 import com.github.espressopad.utils.Utils;
 import com.github.espressopad.views.components.FileTree;
 import com.github.espressopad.views.components.TextEditor;
+import org.fife.ui.rtextarea.RTextScrollPane;
+import org.kordamp.ikonli.fontawesome5.FontAwesomeRegular;
 import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
 import org.kordamp.ikonli.swing.FontIcon;
 
@@ -39,9 +47,9 @@ public class EspressoPadView extends JPanel {
     public EspressoPadView(JFrame frame) {
         this.frame = frame;
         this.frame.addWindowListener(new WindowClosingListener());
-        JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
-        splitPane.setDividerLocation(.5);
-        splitPane.setResizeWeight(.3);
+        DockFrontend frontend = new DockFrontend(frame);
+        SplitDockStation splitDockStation = new SplitDockStation();
+        frontend.addRoot("root", splitDockStation);
         FileTree fileTree = new FileTree(Utils.validateDefaultDirectory().toFile());
         fileTree.addMouseListener(new MouseAdapter() {
             @Override
@@ -53,14 +61,24 @@ public class EspressoPadView extends JPanel {
                 }
             }
         });
-        splitPane.setLeftComponent(new JScrollPane(fileTree));
-        splitPane.setRightComponent(this.tabPane);
+        DefaultDockable fileTreeDockable = Utils.createDockable(new JScrollPane(fileTree), "File Tree");
+        fileTreeDockable.setTitleIcon(FontIcon.of(FontAwesomeRegular.FILE_ALT, 15));
+        frontend.addDockable("fileTree", fileTreeDockable);
+        frontend.setHideable(fileTreeDockable, true);
+        frontend.addFrontendListener(new FrontendAdapter(fileTreeDockable, frontend));
+        splitDockStation.drop(fileTreeDockable, new SplitDockProperty(0, 0, .25, 1));
+        DefaultDockable tabPaneDockable = Utils.createDockable(this.tabPane, "Editor");
+        tabPaneDockable.setTitleIcon(FontIcon.of(FontAwesomeSolid.PEN, 11));
+        frontend.addDockable("results", tabPaneDockable);
+        frontend.setHideable(tabPaneDockable, false);
+        splitDockStation.drop(tabPaneDockable, new SplitDockProperty(0.25, 0, .75, 1));
         this.setLayout(new BorderLayout());
-        this.add(splitPane, BorderLayout.CENTER);
+        this.add(splitDockStation, BorderLayout.CENTER);
         this.createTab(false);
         this.addTabButton();
         this.setupInterface();
         this.setupMiddleMouseListener();
+        this.controller.addArtifactsAndImports(EspressoPadController.getShell());
     }
 
     private void setupInterface() {
@@ -285,6 +303,8 @@ public class EspressoPadView extends JPanel {
             title = String.format("Tab%d", tabCounter.incrementAndGet());
         else title = "Tab1";
         ViewModel model = new ViewModel();
+        this.setupTab(model, title);
+
         JPanel tab = model.getTab();
         TextEditor textEditor = model.getTextEditor();
         if (!prepend)
@@ -295,6 +315,30 @@ public class EspressoPadView extends JPanel {
         this.controller.setupTextChangeListener(textEditor);
         this.viewModels.add(model);
         return tab;
+    }
+
+    private void setupTab(ViewModel model, String title) {
+        model.getTab().setLayout(new BorderLayout());
+        JPanel panel = new JPanel();
+        panel.setLayout(new BoxLayout(panel, BoxLayout.PAGE_AXIS));
+        panel.add(new JScrollPane(model.getResultView()));
+        panel.add(model.getStatusBar());
+        DockFrontend controller = new DockFrontend(this.frame);
+        SplitDockStation station = new SplitDockStation();
+        controller.addRoot("root", station);
+        RTextScrollPane scrollPane = new RTextScrollPane(model.getTextEditor());
+        model.getTextEditor().setScrollPane(scrollPane);
+        DefaultDockable textDock = Utils.createDockable(scrollPane, title);
+        controller.addDockable("document", textDock);
+        controller.setHideable(textDock, false);
+        station.drop(textDock, new SplitDockProperty(0, 0, 1, .6));
+        DefaultDockable dockable = Utils.createDockable(panel, "Results");
+        dockable.setTitleIcon(FontIcon.of(FontAwesomeSolid.GLASSES, 11));
+        controller.addDockable("results", dockable);
+        controller.setHideable(dockable, false);
+        station.drop(dockable, new SplitDockProperty(0, .75, 1, .4));
+        model.getTab().add(station, BorderLayout.CENTER);
+        model.getTextEditor().requestFocusInWindow();
     }
 
     private void openFile() {
@@ -310,6 +354,7 @@ public class EspressoPadView extends JPanel {
         ViewModel model = new ViewModel();
         try {
             String title = file.getName();
+            this.setupTab(model, title);
             JPanel tab = model.getTab();
             TextEditor textEditor = model.getTextEditor();
             textEditor.setText(Files.readString(file.toPath()));
@@ -482,6 +527,47 @@ public class EspressoPadView extends JPanel {
         @Override
         public void windowClosing(WindowEvent e) {
             exit();
+        }
+    }
+
+    class FrontendAdapter extends DockFrontendAdapter {
+        private final JButton showFileTree;
+        private final DefaultDockable fileTreeDockable;
+        private final DockFrontend frontend;
+
+        public FrontendAdapter(DefaultDockable fileTreeDockable, DockFrontend frontend) {
+            this.fileTreeDockable = fileTreeDockable;
+            this.frontend = frontend;
+            this.showFileTree = new JButton(FontIcon.of(FontAwesomeSolid.WINDOW_RESTORE, 15));
+            this.showFileTree.setToolTipText("Restore Default View");
+            this.showFileTree.addActionListener(this::setupShowFileTree);
+        }
+
+        @Override
+        public void hidden(DockFrontend dockFrontend, Dockable dockable) {
+            if (dockable == this.fileTreeDockable) {
+                toolBar.addSeparator();
+                toolBar.add(this.showFileTree);
+            }
+        }
+
+        @Override
+        public void shown(DockFrontend frontend, Dockable dockable) {
+            if (dockable == this.fileTreeDockable) {
+                SwingUtilities.invokeLater(new Runnable() {
+                    @Override
+                    public void run() {
+                        toolBar.remove(FrontendAdapter.this.showFileTree);
+                        SwingUtilities.updateComponentTreeUI(toolBar);
+                    }
+                });
+            }
+        }
+
+        private void setupShowFileTree(ActionEvent event) {
+            if (this.frontend.isHidden(this.fileTreeDockable)) {
+                this.frontend.show(this.fileTreeDockable);
+            }
         }
     }
 }

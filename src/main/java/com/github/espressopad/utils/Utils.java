@@ -1,5 +1,8 @@
 package com.github.espressopad.utils;
 
+import bibliothek.gui.dock.DefaultDockable;
+
+import javax.swing.JComponent;
 import javax.swing.filechooser.FileSystemView;
 import java.awt.Font;
 import java.awt.GraphicsEnvironment;
@@ -35,5 +38,13 @@ public class Utils {
             }
         }
         return path;
+    }
+
+    public static DefaultDockable createDockable(JComponent panel, String title) {
+        DefaultDockable dockable = new DefaultDockable();
+        dockable.setTitleText(title);
+        panel.setOpaque(true);
+        dockable.add(panel);
+        return dockable;
     }
 }
