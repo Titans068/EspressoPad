@@ -67,8 +67,8 @@ public class EspressoPadView extends JPanel {
         frontend.setHideable(fileTreeDockable, true);
         frontend.addFrontendListener(new FrontendAdapter(fileTreeDockable, frontend));
         splitDockStation.drop(fileTreeDockable, new SplitDockProperty(0, 0, .25, 1));
-        DefaultDockable tabPaneDockable = Utils.createDockable(this.tabPane, "Editor");
-        tabPaneDockable.setTitleIcon(FontIcon.of(FontAwesomeSolid.PEN, 11));
+        DefaultDockable tabPaneDockable = Utils.createDockable(this.tabPane, "Open Files");
+        tabPaneDockable.setTitleIcon(FontIcon.of(FontAwesomeSolid.FILE_CODE, 11));
         frontend.addDockable("results", tabPaneDockable);
         frontend.setHideable(tabPaneDockable, false);
         splitDockStation.drop(tabPaneDockable, new SplitDockProperty(0.25, 0, .75, 1));
@@ -135,7 +135,10 @@ public class EspressoPadView extends JPanel {
 
         JButton findBtn = new JButton(FontIcon.of(FontAwesomeSolid.SEARCH, 15));
         findBtn.setToolTipText("Find");
-        findBtn.addActionListener(event -> this.editorController.findAction(this.getCurrentTextEditor(), this.getCurrentViewModel().getStatusBar()));
+        findBtn.addActionListener(event ->
+                this.editorController.findAction(
+                        this.getCurrentTextEditor(), this.getCurrentViewModel().getStatusBar())
+        );
         this.toolBar.add(findBtn);
 
         this.toolBar.addSeparator();
@@ -144,6 +147,8 @@ public class EspressoPadView extends JPanel {
         runBtn.setToolTipText("Run");
         runBtn.addActionListener(event -> this.controller.run(this.getCurrentViewModel()));
         this.toolBar.add(runBtn);
+
+        this.toolBar.addSeparator();
 
         this.add(this.toolBar, BorderLayout.NORTH);
     }
@@ -173,7 +178,9 @@ public class EspressoPadView extends JPanel {
         fileMenu.add(saveFileItem);
 
         JMenuItem saveAsFileItem = new JMenuItem("Save File As");
-        saveAsFileItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_S, ctrlDownMask | InputEvent.SHIFT_DOWN_MASK));
+        saveAsFileItem.setAccelerator(
+                KeyStroke.getKeyStroke(KeyEvent.VK_S, ctrlDownMask | InputEvent.SHIFT_DOWN_MASK)
+        );
         saveAsFileItem.setMnemonic('A');
         saveAsFileItem.addActionListener(event -> this.saveFileAs());
         fileMenu.add(saveAsFileItem);
@@ -232,14 +239,22 @@ public class EspressoPadView extends JPanel {
         findItem.setMnemonic('f');
         findItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_F, ctrlDownMask));
         findItem.addActionListener(event ->
-                this.editorController.findAction(this.getCurrentTextEditor(), this.getCurrentViewModel().getStatusBar()));
+                this.editorController.findAction(
+                        this.getCurrentTextEditor(),
+                        this.getCurrentViewModel().getStatusBar()
+                )
+        );
         editMenu.add(findItem);
 
         JMenuItem replaceItem = new JMenuItem("Replace");
         replaceItem.setMnemonic('e');
         replaceItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_R, ctrlDownMask));
         replaceItem.addActionListener(event ->
-                this.editorController.replaceAction(this.getCurrentTextEditor(), this.getCurrentViewModel().getStatusBar()));
+                this.editorController.replaceAction(
+                        this.getCurrentTextEditor(),
+                        this.getCurrentViewModel().getStatusBar()
+                )
+        );
         editMenu.add(replaceItem);
 
         editMenu.add(new JSeparator());
@@ -259,13 +274,17 @@ public class EspressoPadView extends JPanel {
         JMenuItem duplicateSelectionItem = new JMenuItem("Duplicate");
         duplicateSelectionItem.setMnemonic('d');
         duplicateSelectionItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_T, ctrlDownMask));
-        duplicateSelectionItem.addActionListener(event -> this.editorController.duplicateSelectionAction(this.getCurrentTextEditor()));
+        duplicateSelectionItem.addActionListener(event ->
+                this.editorController.duplicateSelectionAction(this.getCurrentTextEditor()));
         editMenu.add(duplicateSelectionItem);
 
         JMenuItem reformatSelectionItem = new JMenuItem("Reformat");
         reformatSelectionItem.setMnemonic('o');
-        reformatSelectionItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_L, ctrlDownMask | InputEvent.ALT_DOWN_MASK));
-        reformatSelectionItem.addActionListener(event -> this.editorController.reformatSelectionAction(this.getCurrentTextEditor()));
+        reformatSelectionItem.setAccelerator(
+                KeyStroke.getKeyStroke(KeyEvent.VK_L, ctrlDownMask | InputEvent.ALT_DOWN_MASK)
+        );
+        reformatSelectionItem.addActionListener(event ->
+                this.editorController.reformatSelectionAction(this.getCurrentTextEditor()));
         editMenu.add(reformatSelectionItem);
 
         JMenu runMenu = new JMenu("Run");
@@ -276,10 +295,15 @@ public class EspressoPadView extends JPanel {
         JMenu toolsMenu = new JMenu("Tools");
         JMenuItem settingsMenuItem = new JMenuItem("Settings");
         settingsMenuItem.addActionListener(event ->
-                new SettingsView(this.viewModels.stream().map(ViewModel::getTextEditor).collect(Collectors.toList())).show());
+                new SettingsView(
+                        this.viewModels.stream().map(ViewModel::getTextEditor).collect(Collectors.toList())).show()
+        );
         toolsMenu.add(settingsMenuItem);
 
         JMenu helpMenu = new JMenu("Help");
+        JMenuItem aboutMenuItem = new JMenuItem("About");
+        aboutMenuItem.addActionListener(event -> new AboutView(frame).show());
+        helpMenu.add(aboutMenuItem);
 
         this.menuBar.add(fileMenu);
         this.menuBar.add(editMenu);
@@ -545,10 +569,8 @@ public class EspressoPadView extends JPanel {
 
         @Override
         public void hidden(DockFrontend dockFrontend, Dockable dockable) {
-            if (dockable == this.fileTreeDockable) {
-                toolBar.addSeparator();
+            if (dockable == this.fileTreeDockable)
                 toolBar.add(this.showFileTree);
-            }
         }
 
         @Override

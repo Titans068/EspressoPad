@@ -102,7 +102,12 @@ public class TextEditorController {
                         textEditor.requestFocusInWindow();
                     } catch (BadLocationException | NumberFormatException e) {
                         Toolkit.getDefaultToolkit().beep();
-                        JOptionPane.showMessageDialog(frame, "Invalid line", "Go to line", JOptionPane.ERROR_MESSAGE);
+                        JOptionPane.showMessageDialog(
+                                frame,
+                                "Invalid line",
+                                "Go to line",
+                                JOptionPane.ERROR_MESSAGE
+                        );
                         throw new RuntimeException(e);
                     }
                 }

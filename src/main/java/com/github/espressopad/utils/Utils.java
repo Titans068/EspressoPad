@@ -12,11 +12,9 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
-import java.util.List;
-import java.util.stream.Collectors;
 
 public class Utils {
-    public static List<Font> getMonospaceFonts() {
+    public static Font[] getMonospaceFonts() {
         FontRenderContext frc = new FontRenderContext(
                 null,
                 RenderingHints.VALUE_TEXT_ANTIALIAS_DEFAULT,
@@ -25,7 +23,7 @@ public class Utils {
         return Arrays.stream(GraphicsEnvironment.getLocalGraphicsEnvironment().getAllFonts())
                 .filter(font ->
                         font.getStringBounds("i", frc).getWidth() == font.getStringBounds("m", frc).getWidth())
-                .collect(Collectors.toList());
+                .toArray(Font[]::new);
     }
 
     public static Path validateDefaultDirectory() {

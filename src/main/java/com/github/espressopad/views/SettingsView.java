@@ -21,8 +21,10 @@ import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Collections;
 import java.util.List;
-import java.util.*;
+import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -61,13 +63,16 @@ public class SettingsView {
     private final DefaultListModel<String> searchResultsModel = new DefaultListModel<>();
     private final DefaultListModel<String> installedArtifactModel = new DefaultListModel<>();
     private final DefaultListModel<String> importsModel = new DefaultListModel<>();
-    private final List<String> textEditorThemeList = List.of("Default", "Default (System Selection)", "Dark", "Druid",
-            "Monokai", "Eclipse", "IDEA", "Visual Studio");
-    private final Map<String, String> textEditorThemes = IntStream.range(0, this.textEditorThemeList.size()).boxed()
-            .collect(Collectors.toMap(this.textEditorThemeList::get, List.of(
+    private final String[] textEditorThemeList = new String[]{
+            "Default", "Default (System Selection)", "Dark", "Druid",
+            "Monokai", "Eclipse", "IDEA", "Visual Studio"
+    };
+    private final Map<String, String> textEditorThemes = IntStream.range(0, this.textEditorThemeList.length)
+            .boxed()
+            .collect(Collectors.toMap(k -> this.textEditorThemeList[k], v -> new String[]{
                     "default.xml", "default-alt.xml", "dark.xml", "druid.xml", "monokai.xml",
                     "eclipse.xml", "idea.xml", "vs.xml"
-            )::get));
+            }[v]));
 
     public SettingsView(List<TextEditor> textEditors) {
         this.textEditors = textEditors;
@@ -106,7 +111,7 @@ public class SettingsView {
         gbc.gridy = 1;
         panel.add(new JLabel("Editor Font"), gbc);
         gbc.gridx = 1;
-        this.fontComboBox = new JComboBox<>(new Vector<>(Utils.getMonospaceFonts()));
+        this.fontComboBox = new JComboBox<>(Utils.getMonospaceFonts());
         this.fontComboBox.setRenderer(new DefaultListCellRenderer() {
             @Override
             public Component getListCellRendererComponent(
@@ -127,7 +132,7 @@ public class SettingsView {
         gbc.gridy = 2;
         panel.add(new JLabel("Editor theme"), gbc);
         gbc.gridx = 1;
-        this.textEditorThemeComboBox = new JComboBox<>(new Vector<>(this.textEditorThemeList));
+        this.textEditorThemeComboBox = new JComboBox<>(this.textEditorThemeList);
         panel.add(this.textEditorThemeComboBox, gbc);
         gbc.gridx = 0;
         gbc.gridy = 3;
@@ -166,8 +171,12 @@ public class SettingsView {
                 @Override
                 public void run() {
                     try {
-                        InputStream in = this.getClass().getResourceAsStream(String.format("/org/fife/ui/rsyntaxtextarea/themes/%s",
-                                textEditorThemes.get(textEditorThemeComboBox.getSelectedItem())));
+                        InputStream in = this.getClass().getResourceAsStream(
+                                String.format(
+                                        "/org/fife/ui/rsyntaxtextarea/themes/%s",
+                                        textEditorThemes.get(textEditorThemeComboBox.getSelectedItem())
+                                )
+                        );
                         Theme theme = Theme.load(in);
                         for (TextEditor textEditor : textEditors) {
                             theme.apply(textEditor);

@@ -77,7 +77,11 @@ public class EspressoPadController {
         textEditor.getViewModel()
                 .getStatusBar()
                 .setCharacterPosition(
-                        String.format("%d:%d", textEditor.getCaretLineNumber() + 1, textEditor.getCaretOffsetFromLineStart() + 1)
+                        String.format(
+                                "%d:%d",
+                                textEditor.getCaretLineNumber() + 1,
+                                textEditor.getCaretOffsetFromLineStart() + 1
+                        )
                 );
     }
 
@@ -154,7 +158,6 @@ public class EspressoPadController {
                 else break;
             }
         } catch (IllegalStateException e) {
-            e.printStackTrace();
         }
         try {
             int lineStartOffsetOfCurrentLine = textEditor.getLineStartOffsetOfCurrentLine();

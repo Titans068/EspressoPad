@@ -24,9 +24,11 @@ import java.util.List;
 
 public class XmlUtils {
     private final File importsFile = new File(URLDecoder.decode(this.getClass().getProtectionDomain().getCodeSource()
-            .getLocation().getPath(), StandardCharsets.UTF_8)).toPath().getParent().resolve("imports.xml").toFile();
+            .getLocation().getPath(), StandardCharsets.UTF_8))
+            .toPath().getParent().resolve("imports.xml").toFile();
     private final File artifactFile = new File(URLDecoder.decode(this.getClass().getProtectionDomain().getCodeSource()
-            .getLocation().getPath(), StandardCharsets.UTF_8)).toPath().getParent().resolve("artifacts.xml").toFile();
+            .getLocation().getPath(), StandardCharsets.UTF_8))
+            .toPath().getParent().resolve("artifacts.xml").toFile();
 
     public File getImportsFile() {
         return this.importsFile;
