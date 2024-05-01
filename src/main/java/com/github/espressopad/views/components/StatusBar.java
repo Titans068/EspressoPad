@@ -14,6 +14,7 @@ public class StatusBar extends JPanel {
         this.statusLabel = new JLabel("Ready");
         this.findOccurrencesLabel = new JLabel();
         this.characterPosition = new JLabel();
+        this.characterPosition.setToolTipText("Row:Column");
         this.progressBar = new JProgressBar();
         this.setLayout(new BoxLayout(this, BoxLayout.LINE_AXIS));
         this.add(this.statusLabel);
