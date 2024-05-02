@@ -308,6 +308,7 @@ public class EspressoPadController {
                             .stream()
                             .map(imports -> String.format("import %s;", imports))
                             .collect(Collectors.joining()));
+                    eval:
                     while (!completion.source().isBlank()) {
                         List<SnippetEvent> snippets = shell.eval(completion.source());
 
@@ -325,7 +326,8 @@ public class EspressoPadController {
                                             .collect(Collectors.toList());
                                     logger.error("Code evaluation failed. Diagnostic info:\n{}", errors);
                                     errStream.println(errors);
-                                    break;
+                                    shell.stop();
+                                    break eval;
                             }
                             //Runtime errors
                             if (snippet.exception() != null) {
@@ -333,6 +335,7 @@ public class EspressoPadController {
                                 errStream.printf("Code evaluation failed at \"%s\"\nDiagnostic info:\n", src);
                                 snippet.exception().printStackTrace(errStream);
                                 logger.error("EVALUATION ERROR", snippet.exception());
+                                shell.stop();
                                 try {
                                     throw snippet.exception();
                                 } catch (JShellException e) {
