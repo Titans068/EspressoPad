@@ -50,6 +50,10 @@ public class SettingsView {
     private JList<String> installedArtifactsList;
     private JButton removeInstalledArtifactBtn;
     private JButton saveInstalledArtifactBtn;
+    private final String[] textEditorThemeList = new String[]{
+            "Default", "Default (System Selection)", "Dark", "Druid",
+            "Monokai", "Eclipse", "IDEA", "Visual Studio"
+    };
     private final Map<String, String> textEditorThemes = IntStream.range(0, this.textEditorThemeList.length)
             .boxed()
             .collect(Collectors.toMap(k -> new String[]{
@@ -71,10 +75,6 @@ public class SettingsView {
     private final DefaultListModel<String> searchResultsModel = new DefaultListModel<>();
     private final DefaultListModel<String> installedArtifactModel = new DefaultListModel<>();
     private final DefaultListModel<String> importsModel = new DefaultListModel<>();
-    private final String[] textEditorThemeList = new String[]{
-            "Default", "Default (System Selection)", "Dark", "Druid",
-            "Monokai", "Eclipse", "IDEA", "Visual Studio"
-    };
     private JCheckBox wordWrapCheck;
 
     public SettingsView(List<TextEditor> textEditors, SettingsModel settings) {
@@ -149,7 +149,7 @@ public class SettingsView {
         panel.add(new JLabel("Word Wrap"), gbc);
         gbc.gridx = 1;
         this.wordWrapCheck = new JCheckBox();
-        this.wordWrapCheck.setSelected(this.textEditors.get(0).getWrapStyleWord());
+        this.wordWrapCheck.setSelected(this.settings != null && this.settings.isWordWrap());
         panel.add(this.wordWrapCheck, gbc);
         gbc.gridx = 0;
         gbc.gridy = 4;
@@ -217,7 +217,8 @@ public class SettingsView {
             SwingUtilities.updateComponentTreeUI(JOptionPane.getFrameForComponent(this.textEditors.get(0)));
             //TODO: Save to file
             SettingsModel settings = new SettingsModel();
-            settings.setFont(font);
+            settings.setFont(font.getFontName());
+            settings.setFontSize(font.getSize());
             settings.setTheme(themeLocation);
             settings.setWordWrap(wordWrap);
             settings.setLookAndFeel(laf);

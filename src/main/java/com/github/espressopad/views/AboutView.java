@@ -157,7 +157,7 @@ public class AboutView {
         gbc.anchor = GridBagConstraints.WEST;
         gbc.insets = new Insets(0, 0, 10, 0);
         panel3.add(label3, gbc);
-        HyperlinkLabel label4 = new HyperlinkLabel("jAstyle by Abrar Sayed");
+        HyperlinkLabel label4 = new HyperlinkLabel("jAstyle by Abrar Syed");
         label4.setURL("https://github.com/AbrarSyed/jastyle");
         gbc = new GridBagConstraints();
         gbc.gridx = 0;

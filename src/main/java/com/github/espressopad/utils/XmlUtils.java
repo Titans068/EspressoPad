@@ -1,9 +1,12 @@
 package com.github.espressopad.utils;
 
+import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.fasterxml.jackson.dataformat.xml.ser.ToXmlGenerator;
+import com.fasterxml.jackson.dataformat.xml.util.DefaultXmlPrettyPrinter;
 import com.github.espressopad.models.SettingsModel;
+import org.codehaus.stax2.XMLStreamWriter2;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -14,6 +17,7 @@ import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.stream.XMLStreamException;
 import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerException;
 import javax.xml.transform.TransformerFactory;
@@ -36,8 +40,10 @@ public class XmlUtils {
     private final File settingsFile = new File(URLDecoder.decode(this.getClass().getProtectionDomain().getCodeSource()
             .getLocation().getPath(), StandardCharsets.UTF_8))
             .toPath().getParent().resolve("settings.xml").toFile();
+    private final DefaultXmlPrettyPrinter printer = new DefaultXmlPrettyPrinter();
     private final XmlMapper mapper = XmlMapper.builder()
             .defaultUseWrapper(false)
+            .defaultPrettyPrinter(this.printer)
             .enable(SerializationFeature.INDENT_OUTPUT)
             .enable(ToXmlGenerator.Feature.WRITE_XML_DECLARATION)
             .disable(SerializationFeature.FAIL_ON_EMPTY_BEANS)
@@ -49,6 +55,12 @@ public class XmlUtils {
 
     public File getArtifactFile() {
         return this.artifactFile;
+    }
+
+    public XmlUtils() {
+        XmlPrettifier prettifier = new XmlPrettifier();
+        this.printer.indentObjectsWith(prettifier);
+        this.printer.indentArraysWith(prettifier);
     }
 
     private Document initDocument(File file) throws ParserConfigurationException, SAXException, IOException {
@@ -201,6 +213,27 @@ public class XmlUtils {
             return this.mapper.readValue(bufferedInputStream, SettingsModel.class);
         } catch (IOException e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    private class XmlPrettifier implements DefaultXmlPrettyPrinter.Indenter {
+        @Override
+        public void writeIndentation(JsonGenerator g, int level) throws IOException {
+            g.writeRaw("\n", 0, 1);
+            for (int l = 0; l < level; l++)
+                g.writeRaw(" ".repeat(4), 0, 4);
+        }
+
+        @Override
+        public void writeIndentation(XMLStreamWriter2 streamWriter2, final int level) throws XMLStreamException {
+            streamWriter2.writeRaw("\n", 0, 1);
+            for (int l = 0; l < level; l++)
+                streamWriter2.writeRaw(" ".repeat(4), 0, 4);
+        }
+
+        @Override
+        public boolean isInline() {
+            return false;
         }
     }
 }
