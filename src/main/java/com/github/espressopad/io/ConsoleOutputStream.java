@@ -18,29 +18,29 @@ public class ConsoleOutputStream extends OutputStream {
         switch (c) {
             case '\r':
                 // Append a <br> element for newline characters
-                element.append("<br>");
+                this.element.append("<br>");
                 break;
             case '\n':
-                if (prev != null && prev != '\r')
-                    element.append("<br>");
+                if (this.prev != null && this.prev != '\r')
+                    this.element.append("<br>");
                 break;
             case '\t':
                 // Replace tabs with four non-breaking spaces
-                element.append("&nbsp;".repeat(4));
+                this.element.append("&nbsp;".repeat(4));
                 break;
             case '\b':
-                element = new StringBuilder(element.substring(0, element.length() - 1));
+                this.element = new StringBuilder(this.element.substring(0, this.element.length() - 1));
                 break;
             case '\f':
-                element.append("<br>");
-                element.append("&nbsp;".repeat(4));
+                this.element.append("<br>");
+                this.element.append("&nbsp;".repeat(4));
                 break;
             default:
                 // Append other characters as text
-                element.append(c);
+                this.element.append(c);
                 break;
         }
-        prev = c;
-        document.setText(element.toString());
+        this.prev = c;
+        this.document.setText(this.element.toString());
     }
 }

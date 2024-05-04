@@ -51,12 +51,12 @@ public class EspressoPadController {
 
     public void addArtifactsAndImports(JShell shell) {
         if (this.handler.getArtifactFile().exists()) {
-            for (String s : handler.parseArtifactXml())
+            for (String s : this.handler.parseArtifactXml())
                 shell.addToClasspath(s);
         }
         if (!this.handler.getImportsFile().exists())
             this.handler.writeImportXml(List.of("java.util.stream.*", "java.util.*", "java.io.*"));
-        else shell.eval(handler.parseImportXml()
+        else shell.eval(this.handler.parseImportXml()
                 .stream()
                 .map(imports -> String.format("import %s;", imports))
                 .collect(Collectors.joining()));
@@ -78,8 +78,7 @@ public class EspressoPadController {
                 .getStatusBar()
                 .setCharacterPosition(
                         String.format(
-                                "%d:%d",
-                                textEditor.getCaretLineNumber() + 1,
+                                "%d:%d", textEditor.getCaretLineNumber() + 1,
                                 textEditor.getCaretOffsetFromLineStart() + 1
                         )
                 );
@@ -185,7 +184,7 @@ public class EspressoPadController {
                 documentationList.addAll(documentation);
             }*/
 
-            provider.clear();
+            this.provider.clear();
             List<Completion> completions = new ArrayList<>();
             for (int i = 0; i < suggestions.size(); i++) {
                 SourceCodeAnalysis.Suggestion suggestion = suggestions.get(i);
@@ -195,9 +194,9 @@ public class EspressoPadController {
                         HtmlUtils.convertJavaDoc(documentation.javadoc())
                 );
                 completions.add(basicCompletion);*/
-                completions.add(new BasicCompletion(provider, suggestion.continuation()));
+                completions.add(new BasicCompletion(this.provider, suggestion.continuation()));
             }
-            provider.addCompletions(completions);
+            this.provider.addCompletions(completions);
         } catch (BadLocationException e) {
             throw new RuntimeException(e);
         }
@@ -304,7 +303,7 @@ public class EspressoPadController {
                      JShell shell = JShell.builder().out(out).err(errStream).in(consoleInputStream).build()) {
                     addArtifactsAndImports(shell);
                     SourceCodeAnalysis.CompletionInfo completion = shell.sourceCodeAnalysis().analyzeCompletion(code);
-                    List<SnippetEvent> l = shell.eval(handler.parseImportXml()
+                    List<SnippetEvent> l = shell.eval(EspressoPadController.this.handler.parseImportXml()
                             .stream()
                             .map(imports -> String.format("import %s;", imports))
                             .collect(Collectors.joining()));
@@ -317,24 +316,24 @@ public class EspressoPadController {
                             String src = snippet.snippet().source().trim();
                             switch (snippet.status()) {
                                 case VALID:
-                                    logger.debug(src);
+                                    EspressoPadController.this.logger.debug(src);
                                     break;
                                 case REJECTED: //Compile time errors
                                     List<String> errors = shell.diagnostics(snippet.snippet())
                                             .map(x -> String.format("\n\"%s\" -> %s\n", src,
                                                     x.getMessage(Locale.ENGLISH)))
                                             .collect(Collectors.toList());
-                                    logger.error("Code evaluation failed. Diagnostic info:\n{}", errors);
+                                    EspressoPadController.this.logger.error("Code evaluation failed. Diagnostic info:\n{}", errors);
                                     errStream.println(errors);
                                     shell.stop();
                                     break eval;
                             }
                             //Runtime errors
                             if (snippet.exception() != null) {
-                                logger.error("Code evaluation failed at \"{}\"", src);
+                                EspressoPadController.this.logger.error("Code evaluation failed at \"{}\"", src);
                                 errStream.printf("Code evaluation failed at \"%s\"\nDiagnostic info:\n", src);
                                 snippet.exception().printStackTrace(errStream);
-                                logger.error("EVALUATION ERROR", snippet.exception());
+                                EspressoPadController.this.logger.error("EVALUATION ERROR", snippet.exception());
                                 shell.stop();
                                 try {
                                     throw snippet.exception();

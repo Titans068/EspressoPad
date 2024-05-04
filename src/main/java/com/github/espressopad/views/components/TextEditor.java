@@ -23,7 +23,7 @@ public class TextEditor extends RSyntaxTextArea {
         this.setHighlightCurrentLine(true);
         this.setSyntaxEditingStyle(SYNTAX_STYLE_JAVA);
         this.setCodeFoldingEnabled(true);
-        this.setLineWrap(true);
+        //this.setLineWrap(true);
         this.setMarkOccurrences(true);
         this.setAutoIndentEnabled(true);
     }

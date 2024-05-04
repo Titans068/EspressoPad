@@ -8,10 +8,13 @@ import bibliothek.gui.dock.event.DockFrontendAdapter;
 import bibliothek.gui.dock.station.split.SplitDockProperty;
 import com.github.espressopad.controller.EspressoPadController;
 import com.github.espressopad.controller.TextEditorController;
+import com.github.espressopad.models.SettingsModel;
 import com.github.espressopad.models.ViewModel;
 import com.github.espressopad.utils.Utils;
+import com.github.espressopad.utils.XmlUtils;
 import com.github.espressopad.views.components.FileTree;
 import com.github.espressopad.views.components.TextEditor;
+import org.fife.ui.rsyntaxtextarea.Theme;
 import org.fife.ui.rtextarea.RTextScrollPane;
 import org.kordamp.ikonli.fontawesome5.FontAwesomeRegular;
 import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
@@ -25,6 +28,7 @@ import java.awt.*;
 import java.awt.event.*;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -41,13 +45,40 @@ public class EspressoPadView extends JPanel {
     private final JMenuBar menuBar = new JMenuBar();
     private final List<ViewModel> viewModels = new ArrayList<>();
     private final TextEditorController editorController = new TextEditorController();
+    private final XmlUtils handler = new XmlUtils();
     private final JFrame frame;
     private boolean ignore = false;
+    private final SettingsModel settings;
 
     public EspressoPadView(JFrame frame) {
         this.frame = frame;
         this.frame.addWindowListener(new WindowClosingListener());
-        DockFrontend frontend = new DockFrontend(frame);
+        this.settings = this.handler.parseSettingsXml();
+        try {
+            if (this.settings != null) {
+                String laf = this.settings.getLookAndFeel();
+                UIManager.setLookAndFeel(laf);
+                SwingUtilities.updateComponentTreeUI(this.tabPane);
+            }
+        } catch (UnsupportedLookAndFeelException | ClassNotFoundException | InstantiationException |
+                 IllegalAccessException ioe) {
+            throw new RuntimeException(ioe);
+        }
+        this.createTab(false);
+        this.addTabButton();
+        this.setupInterface();
+        this.setupMiddleMouseListener();
+        this.controller.addArtifactsAndImports(EspressoPadController.getShell());
+    }
+
+    private void setupInterface() {
+        this.setupDocking();
+        this.setupMenuBar();
+        this.setupToolBar();
+    }
+
+    private void setupDocking() {
+        DockFrontend frontend = new DockFrontend(this.frame);
         SplitDockStation splitDockStation = new SplitDockStation();
         frontend.addRoot("root", splitDockStation);
         FileTree fileTree = new FileTree(Utils.validateDefaultDirectory().toFile());
@@ -74,16 +105,22 @@ public class EspressoPadView extends JPanel {
         splitDockStation.drop(tabPaneDockable, new SplitDockProperty(0.25, 0, .75, 1));
         this.setLayout(new BorderLayout());
         this.add(splitDockStation, BorderLayout.CENTER);
-        this.createTab(false);
-        this.addTabButton();
-        this.setupInterface();
-        this.setupMiddleMouseListener();
-        this.controller.addArtifactsAndImports(EspressoPadController.getShell());
     }
 
-    private void setupInterface() {
-        this.setupMenuBar();
-        this.setupToolBar();
+    private void setupTextEditorAppearance(TextEditor textEditor) {
+        try {
+            if (this.settings == null) return;
+            String themeLocation = this.settings.getTheme();
+            Font font = this.settings.getFont();
+            boolean wordWrap = this.settings.isWordWrap();
+            InputStream in = this.getClass().getResourceAsStream(themeLocation);
+            Theme theme = Theme.load(in);
+            theme.apply(textEditor);
+            textEditor.setFont(font);
+            textEditor.setLineWrap(wordWrap);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private void setupToolBar() {
@@ -296,13 +333,15 @@ public class EspressoPadView extends JPanel {
         JMenuItem settingsMenuItem = new JMenuItem("Settings");
         settingsMenuItem.addActionListener(event ->
                 new SettingsView(
-                        this.viewModels.stream().map(ViewModel::getTextEditor).collect(Collectors.toList())).show()
+                        this.viewModels.stream().map(ViewModel::getTextEditor).collect(Collectors.toList()),
+                        this.settings
+                ).show()
         );
         toolsMenu.add(settingsMenuItem);
 
         JMenu helpMenu = new JMenu("Help");
         JMenuItem aboutMenuItem = new JMenuItem("About");
-        aboutMenuItem.addActionListener(event -> new AboutView(frame).show());
+        aboutMenuItem.addActionListener(event -> new AboutView(this.frame).show());
         helpMenu.add(aboutMenuItem);
 
         this.menuBar.add(fileMenu);
@@ -336,6 +375,7 @@ public class EspressoPadView extends JPanel {
         else this.tabPane.insertTab(title, null, tab, null, this.tabPane.getTabCount() - 1);
 
         this.setupClosableTabs(title);
+        this.setupTextEditorAppearance(textEditor);
         this.controller.setupTextChangeListener(textEditor);
         this.viewModels.add(model);
         return tab;
@@ -382,6 +422,7 @@ public class EspressoPadView extends JPanel {
             JPanel tab = model.getTab();
             TextEditor textEditor = model.getTextEditor();
             textEditor.setText(Files.readString(file.toPath()));
+            this.setupTextEditorAppearance(textEditor);
             model.setBackingFile(file);
             this.tabPane.insertTab(title, null, tab, null, this.tabPane.getTabCount() - 1);
             this.tabPane.setSelectedComponent(tab);
@@ -395,8 +436,8 @@ public class EspressoPadView extends JPanel {
     }
 
     private void addTabButton() {
-        tabPane.addTab(null, FontIcon.of(FontAwesomeSolid.PLUS, 12), new JPanel());
-        tabPane.getModel().addChangeListener(this::tabStateChanged);
+        this.tabPane.addTab(null, FontIcon.of(FontAwesomeSolid.PLUS, 12), new JPanel());
+        this.tabPane.getModel().addChangeListener(this::tabStateChanged);
     }
 
     private void tabStateChanged(ChangeEvent e) {
@@ -406,7 +447,7 @@ public class EspressoPadView extends JPanel {
                 int selected = this.tabPane.getSelectedIndex();
                 FontIcon icon = (FontIcon) this.tabPane.getIconAt(selected);
                 if (icon != null && FontAwesomeSolid.PLUS.getCode() == icon.getIkon().getCode() &&
-                    selected == this.tabPane.getTabCount() - 1) {
+                        selected == this.tabPane.getTabCount() - 1) {
                     JPanel pane = this.createTab(false);
                     String tl = String.format("Tab%d", tabCounter.get());
                     this.tabPane.insertTab(tl, null, pane, null, this.tabPane.getTabCount() - 2);
@@ -438,7 +479,7 @@ public class EspressoPadView extends JPanel {
         }
     }
 
-    public void setupClosableTabs(String title) {
+    private void setupClosableTabs(String title) {
         int index = this.tabPane.indexOfTab(title);
         JPanel pnlTab = new JPanel(new GridBagLayout());
         pnlTab.setOpaque(false);
@@ -467,18 +508,18 @@ public class EspressoPadView extends JPanel {
         this.tabPane.setTabComponentAt(index, pnlTab);
     }
 
-    public void setupMiddleMouseListener() {
+    private void setupMiddleMouseListener() {
         this.tabPane.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
                 if (tabPane.getBoundsAt(tabPane.getSelectedIndex()).contains(e.getPoint()) &&
-                    SwingUtilities.isMiddleMouseButton(e))
+                        SwingUtilities.isMiddleMouseButton(e))
                     removeCurrentTab();
             }
         });
     }
 
-    public void removeCurrentTab() {
+    private void removeCurrentTab() {
         if (this.tabPane.getTabCount() <= 2) return;
         this.viewModels.remove(this.tabPane.getSelectedIndex());
         this.tabPane.remove(this.tabPane.getSelectedComponent());
@@ -570,7 +611,7 @@ public class EspressoPadView extends JPanel {
         @Override
         public void hidden(DockFrontend dockFrontend, Dockable dockable) {
             if (dockable == this.fileTreeDockable)
-                toolBar.add(this.showFileTree);
+                EspressoPadView.this.toolBar.add(this.showFileTree);
         }
 
         @Override
@@ -579,8 +620,8 @@ public class EspressoPadView extends JPanel {
                 SwingUtilities.invokeLater(new Runnable() {
                     @Override
                     public void run() {
-                        toolBar.remove(FrontendAdapter.this.showFileTree);
-                        SwingUtilities.updateComponentTreeUI(toolBar);
+                        EspressoPadView.this.toolBar.remove(FrontendAdapter.this.showFileTree);
+                        SwingUtilities.updateComponentTreeUI(EspressoPadView.this.toolBar);
                     }
                 });
             }

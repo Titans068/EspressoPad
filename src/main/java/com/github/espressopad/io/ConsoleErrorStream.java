@@ -16,7 +16,7 @@ public class ConsoleErrorStream extends ConsoleOutputStream {
                 this.element.append("<br>");
                 break;
             case '\n':
-                if (prev != null && prev != '\r')
+                if (this.prev != null && this.prev != '\r')
                     this.element.append("<br>");
                 break;
             case '\t':
@@ -36,6 +36,6 @@ public class ConsoleErrorStream extends ConsoleOutputStream {
                 break;
         }
         this.prev = c;
-        this.document.setText(String.format("<font color=\"B22222\">%s</font>", element.toString()));
+        this.document.setText(String.format("<font color=\"B22222\">%s</font>", this.element.toString()));
     }
 }

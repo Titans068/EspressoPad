@@ -1,5 +1,6 @@
 package com.github.espressopad.views;
 
+import com.github.espressopad.utils.Utils;
 import com.github.espressopad.views.components.HyperlinkLabel;
 import com.github.espressopad.views.components.MultiLineCellRenderer;
 import org.kordamp.ikonli.fontawesome5.FontAwesomeBrands;
@@ -8,16 +9,13 @@ import org.kordamp.ikonli.swing.FontIcon;
 import javax.swing.*;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
-import javax.swing.plaf.FontUIResource;
 import javax.swing.table.DefaultTableModel;
-import javax.swing.text.StyleContext;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.IOException;
 import java.net.URI;
 import java.time.Year;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -57,29 +55,29 @@ public class AboutView {
 
     public void show() {
         this.dialog.setTitle("About Espresso Pad");
-        this.dialog.setContentPane(contentPane);
+        this.dialog.setContentPane(this.contentPane);
         this.dialog.setModal(true);
-        this.dialog.getRootPane().setDefaultButton(buttonOK);
+        this.dialog.getRootPane().setDefaultButton(this.buttonOK);
         this.dialog.setSize(new Dimension(550, 450));
         this.dialog.setLocationRelativeTo(this.frame);
         this.dialog.setVisible(true);
     }
 
     private void setupUI() {
-        contentPane = new JPanel();
-        contentPane.setLayout(new BorderLayout(0, 0));
+        this.contentPane = new JPanel();
+        this.contentPane.setLayout(new BorderLayout(0, 0));
         JPanel panel1 = new JPanel();
         panel1.setLayout(new GridBagLayout());
-        contentPane.add(panel1, BorderLayout.SOUTH);
-        buttonOK = new JButton();
-        buttonOK.setHorizontalAlignment(0);
-        buttonOK.setText("OK");
+        this.contentPane.add(panel1, BorderLayout.SOUTH);
+        this.buttonOK = new JButton();
+        this.buttonOK.setHorizontalAlignment(0);
+        this.buttonOK.setText("OK");
         GridBagConstraints gbc;
         gbc = new GridBagConstraints();
         gbc.gridx = 1;
         gbc.gridy = 0;
         gbc.insets = new Insets(10, 0, 10, 10);
-        panel1.add(buttonOK, gbc);
+        panel1.add(this.buttonOK, gbc);
         JPanel spacer1 = new JPanel();
         gbc = new GridBagConstraints();
         gbc.gridx = 0;
@@ -88,7 +86,7 @@ public class AboutView {
         gbc.fill = GridBagConstraints.BOTH;
         panel1.add(spacer1, gbc);
         JTabbedPane tabbedPane1 = new JTabbedPane();
-        contentPane.add(tabbedPane1, BorderLayout.CENTER);
+        this.contentPane.add(tabbedPane1, BorderLayout.CENTER);
         JPanel panel2 = new JPanel();
         panel2.setLayout(new GridBagLayout());
         tabbedPane1.addTab("Properties", panel2);
@@ -100,8 +98,8 @@ public class AboutView {
         gbc.weighty = 0.9;
         gbc.fill = GridBagConstraints.BOTH;
         gbc.insets = new Insets(10, 10, 10, 10);
-        panel2.add(new JScrollPane(propertiesTable), gbc);
-        filterPropertiesText = new JTextField();
+        panel2.add(new JScrollPane(this.propertiesTable), gbc);
+        this.filterPropertiesText = new JTextField();
         this.filterPropertiesText.setBorder(BorderFactory.createTitledBorder("Filter Properties"));
         gbc = new GridBagConstraints();
         gbc.gridx = 0;
@@ -111,17 +109,17 @@ public class AboutView {
         gbc.anchor = GridBagConstraints.WEST;
         gbc.fill = GridBagConstraints.HORIZONTAL;
         gbc.insets = new Insets(10, 10, 0, 10);
-        panel2.add(filterPropertiesText, gbc);
+        panel2.add(this.filterPropertiesText, gbc);
         JPanel panel3 = new JPanel();
         panel3.setLayout(new GridBagLayout());
-        tabbedPane1.addTab("Libraries Used", panel3);
+        tabbedPane1.addTab("Libraries Used", new JScrollPane(panel3));
         JLabel label1 = new JLabel();
-        label1.setText("EspressoPad uses the following libraries");
+        label1.setText("Espresso Pad uses the following libraries:");
         gbc = new GridBagConstraints();
         gbc.gridx = 0;
         gbc.gridy = 0;
         gbc.anchor = GridBagConstraints.WEST;
-        gbc.insets = new Insets(0, 0, 10, 0);
+        gbc.insets = new Insets(20, 0, 10, 0);
         panel3.add(label1, gbc);
         JPanel spacer2 = new JPanel();
         gbc = new GridBagConstraints();
@@ -135,6 +133,14 @@ public class AboutView {
         gbc.gridy = 1;
         gbc.fill = GridBagConstraints.VERTICAL;
         panel3.add(spacer3, gbc);
+        HyperlinkLabel label9 = new HyperlinkLabel("RSyntaxTextArea by bobbylight");
+        label9.setURL("https://github.com/bobbylight/RSyntaxTextArea");
+        gbc = new GridBagConstraints();
+        gbc.gridx = 0;
+        gbc.gridy = 2;
+        gbc.anchor = GridBagConstraints.WEST;
+        gbc.insets = new Insets(0, 0, 10, 0);
+        panel3.add(label9, gbc);
         HyperlinkLabel label2 = new HyperlinkLabel("Ikonli by Kordamp");
         label2.setURL("https://github.com/kordamp/ikonli");
         gbc = new GridBagConstraints();
@@ -191,19 +197,19 @@ public class AboutView {
         gbc.anchor = GridBagConstraints.WEST;
         gbc.insets = new Insets(0, 0, 10, 0);
         panel3.add(label8, gbc);
-        HyperlinkLabel label9 = new HyperlinkLabel("RSyntaxTextArea by bobbylight");
-        label9.setURL("https://github.com/bobbylight/RSyntaxTextArea");
+        HyperlinkLabel label12 = new HyperlinkLabel("Jackson Dataformat XML");
+        label12.setURL("https://github.com/FasterXML/jackson-dataformat-xml");
         gbc = new GridBagConstraints();
         gbc.gridx = 0;
-        gbc.gridy = 2;
+        gbc.gridy = 10;
         gbc.anchor = GridBagConstraints.WEST;
         gbc.insets = new Insets(0, 0, 10, 0);
-        panel3.add(label9, gbc);
+        panel3.add(label12, gbc);
         JPanel panel4 = new JPanel();
         panel4.setLayout(new GridBagLayout());
-        contentPane.add(panel4, BorderLayout.NORTH);
+        this.contentPane.add(panel4, BorderLayout.NORTH);
         JLabel label10 = new JLabel();
-        Font label10Font = this.getFont(null, Font.BOLD, 26, label10.getFont());
+        Font label10Font = Utils.deriveFont(null, Font.BOLD, 26, label10.getFont());
         if (label10Font != null) label10.setFont(label10Font);
         label10.setText("Espresso Pad");
         gbc = new GridBagConstraints();
@@ -224,13 +230,13 @@ public class AboutView {
         this.viewGithubBtn.setIcon(FontIcon.of(FontAwesomeBrands.GITHUB, 15));
         this.viewGithubBtn.setToolTipText("View My Github Profile");
         this.viewGithubBtn.addActionListener(this::browseGithub);
-        viewGithubBtn.setText("");
+        this.viewGithubBtn.setText("");
         gbc = new GridBagConstraints();
         gbc.gridx = 2;
         gbc.gridy = 0;
         gbc.fill = GridBagConstraints.HORIZONTAL;
         gbc.insets = new Insets(10, 0, 0, 10);
-        panel4.add(viewGithubBtn, gbc);
+        panel4.add(this.viewGithubBtn, gbc);
         JPanel spacer4 = new JPanel();
         gbc = new GridBagConstraints();
         gbc.gridx = 1;
@@ -240,36 +246,6 @@ public class AboutView {
         panel4.add(spacer4, gbc);
         this.filterPropertiesText.grabFocus();
         this.filterPropertiesText.requestFocusInWindow();
-    }
-
-    private Font getFont(String fontName, int style, int size, Font currentFont) {
-        if (currentFont == null) return null;
-        String resultName;
-        if (fontName == null)
-            resultName = currentFont.getName();
-        else {
-            Font testFont = new Font(fontName, Font.PLAIN, 10);
-            if (testFont.canDisplay('a') && testFont.canDisplay('1'))
-                resultName = fontName;
-            else resultName = currentFont.getName();
-        }
-        Font font;
-        if (style >= 0) {
-            if (size >= 0) font = new Font(resultName, style, size);
-            else font = new Font(resultName, style, currentFont.getSize());
-        } else {
-            if (size >= 0)
-                font = new Font(resultName, currentFont.getStyle(), size);
-            else font = new Font(resultName, currentFont.getStyle(), currentFont.getSize());
-        }
-        boolean isMac = System.getProperty("os.name", "").toLowerCase(Locale.ENGLISH).startsWith("mac");
-        Font fontWithFallback;
-        if (isMac)
-            fontWithFallback = new Font(font.getFamily(), font.getStyle(), font.getSize());
-        else fontWithFallback = new StyleContext().getFont(font.getFamily(), font.getStyle(), font.getSize());
-        if (fontWithFallback instanceof FontUIResource)
-            return fontWithFallback;
-        return new FontUIResource(fontWithFallback);
     }
 
     private void setupTable() {
@@ -307,8 +283,8 @@ public class AboutView {
             private void onChange() {
                 Map<String, String> filteredProperties = properties.entrySet()
                         .stream()
-                        .filter(x -> x.getKey().toLowerCase().contains(filterPropertiesText.getText().toLowerCase()) ||
-                                     x.getValue().toLowerCase().contains(filterPropertiesText.getText().toLowerCase()))
+                        .filter(x -> x.getKey().toLowerCase().contains(AboutView.this.filterPropertiesText.getText().toLowerCase()) ||
+                                x.getValue().toLowerCase().contains(AboutView.this.filterPropertiesText.getText().toLowerCase()))
                         .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
                 tableModel.setRowCount(0);
                 for (Map.Entry<String, String> entry : filteredProperties.entrySet())

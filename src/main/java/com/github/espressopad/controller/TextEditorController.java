@@ -21,7 +21,6 @@ import javax.swing.UIManager;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.text.BadLocationException;
 import java.awt.Frame;
-import java.awt.Toolkit;
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -101,7 +100,7 @@ public class TextEditorController {
                         textEditor.setCaretPosition(textEditor.getLineStartOffset(y));
                         textEditor.requestFocusInWindow();
                     } catch (BadLocationException | NumberFormatException e) {
-                        Toolkit.getDefaultToolkit().beep();
+                        UIManager.getLookAndFeel().provideErrorFeedback(textEditor);
                         JOptionPane.showMessageDialog(
                                 frame,
                                 "Invalid line",
@@ -228,7 +227,7 @@ public class TextEditorController {
                 case REPLACE_ALL:
                     result = SearchEngine.replaceAll(this.textEditor, context);
                     JOptionPane.showMessageDialog(
-                            JOptionPane.getFrameForComponent(textEditor),
+                            JOptionPane.getFrameForComponent(this.textEditor),
                             String.format("%d occurrences replaced.", result.getCount())
                     );
                     break;

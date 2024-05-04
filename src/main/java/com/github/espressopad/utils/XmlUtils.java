@@ -1,5 +1,9 @@
 package com.github.espressopad.utils;
 
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.dataformat.xml.XmlMapper;
+import com.fasterxml.jackson.dataformat.xml.ser.ToXmlGenerator;
+import com.github.espressopad.models.SettingsModel;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -15,10 +19,10 @@ import javax.xml.transform.TransformerException;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -29,6 +33,15 @@ public class XmlUtils {
     private final File artifactFile = new File(URLDecoder.decode(this.getClass().getProtectionDomain().getCodeSource()
             .getLocation().getPath(), StandardCharsets.UTF_8))
             .toPath().getParent().resolve("artifacts.xml").toFile();
+    private final File settingsFile = new File(URLDecoder.decode(this.getClass().getProtectionDomain().getCodeSource()
+            .getLocation().getPath(), StandardCharsets.UTF_8))
+            .toPath().getParent().resolve("settings.xml").toFile();
+    private final XmlMapper mapper = XmlMapper.builder()
+            .defaultUseWrapper(false)
+            .enable(SerializationFeature.INDENT_OUTPUT)
+            .enable(ToXmlGenerator.Feature.WRITE_XML_DECLARATION)
+            .disable(SerializationFeature.FAIL_ON_EMPTY_BEANS)
+            .build();
 
     public File getImportsFile() {
         return this.importsFile;
@@ -73,8 +86,8 @@ public class XmlUtils {
             Document document = builder.newDocument();
             Node node = document.getElementsByTagName("artifacts").item(0);
 
-            if (artifactFile.exists() && node != null) {
-                document = builder.parse(artifactFile);
+            if (this.artifactFile.exists() && node != null) {
+                document = builder.parse(this.artifactFile);
 
                 for (String artifacts : this.checkDuplicateChildNodes(artifactList, node)) {
                     Element lib = document.createElement("artifact");
@@ -119,8 +132,8 @@ public class XmlUtils {
             DocumentBuilder builder = builderFactory.newDocumentBuilder();
             Document document;
 
-            if (this.getImportsFile().exists()) {
-                document = builder.parse(this.getImportsFile());
+            if (this.importsFile.exists()) {
+                document = builder.parse(this.importsFile);
                 Node node = document.getElementsByTagName("imports").item(0);
 
                 if (node != null) {
@@ -163,6 +176,30 @@ public class XmlUtils {
                 importList.add(imports.item(i).getTextContent());
             return importList;
         } catch (ParserConfigurationException | SAXException | IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public void writeSettingsXml(SettingsModel settings) {
+        try {
+            if (!this.settingsFile.exists())
+                Files.createFile(this.settingsFile.toPath());
+            try (FileOutputStream fileOutputStream = new FileOutputStream(this.settingsFile);
+                 BufferedOutputStream bufferedOutputStream = new BufferedOutputStream(fileOutputStream)) {
+                this.mapper.writeValue(bufferedOutputStream, settings);
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public SettingsModel parseSettingsXml() {
+        if (!this.settingsFile.exists())
+            return null;
+        try (FileInputStream fileInputStream = new FileInputStream(this.settingsFile);
+             BufferedInputStream bufferedInputStream = new BufferedInputStream(fileInputStream)) {
+            return this.mapper.readValue(bufferedInputStream, SettingsModel.class);
+        } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }

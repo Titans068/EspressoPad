@@ -10,7 +10,7 @@ public class SavePromptDialog {
     private final JDialog dialog;
     private final JPanel panel = new JPanel(new BorderLayout());
     private final DefaultListModel<String> unsavedListModel = new DefaultListModel<>();
-    private final JList<String> unsavedList = new JList<>(unsavedListModel);
+    private final JList<String> unsavedList = new JList<>(this.unsavedListModel);
     private final JButton yesButton = new JButton("Yes");
     private final JButton noButton = new JButton("No");
     private final JButton cancelButton = new JButton("Cancel");

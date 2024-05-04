@@ -35,7 +35,7 @@ public class HyperlinkLabel extends JLabel {
         this.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseEntered(MouseEvent e) {
-                setText(String.format(html, text));
+                setText(String.format(HyperlinkLabel.this.html, text));
             }
 
             @Override

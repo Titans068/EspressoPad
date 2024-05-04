@@ -9,13 +9,6 @@ import java.awt.Dimension;
 
 public class EspressoPadApplication {
     public static void main(String[] args) {
-        /*try {
-            UIManager.setLookAndFeel("com.sun.java.swing.plaf.motif.MotifLookAndFeel");
-        } catch (UnsupportedLookAndFeelException | ClassNotFoundException | InstantiationException |
-                 IllegalAccessException e) {
-            throw new RuntimeException(e);
-        }*/
-
         JFrame frame = new JFrame("Espresso Pad");
         EspressoPadView root = new EspressoPadView(frame);
         frame.setLayout(new BorderLayout());

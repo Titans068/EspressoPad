@@ -3,6 +3,7 @@ package com.github.espressopad.views;
 import com.github.espressopad.controller.EspressoPadController;
 import com.github.espressopad.controller.SettingsController;
 import com.github.espressopad.models.ArtifactModel;
+import com.github.espressopad.models.SettingsModel;
 import com.github.espressopad.utils.Utils;
 import com.github.espressopad.utils.XmlUtils;
 import com.github.espressopad.views.components.PlaceHolderTextField;
@@ -33,6 +34,7 @@ public class SettingsView {
     private final SettingsController controller = new SettingsController();
     private final XmlUtils handler = new XmlUtils();
     private final JTabbedPane view = new JTabbedPane();
+    private final SettingsModel settings;
     private JDialog dialog;
     private JRadioButton searchDependencyRadio;
     private JButton searchDependencyBtn;
@@ -48,6 +50,12 @@ public class SettingsView {
     private JList<String> installedArtifactsList;
     private JButton removeInstalledArtifactBtn;
     private JButton saveInstalledArtifactBtn;
+    private final Map<String, String> textEditorThemes = IntStream.range(0, this.textEditorThemeList.length)
+            .boxed()
+            .collect(Collectors.toMap(k -> new String[]{
+                    "default.xml", "default-alt.xml", "dark.xml", "druid.xml", "monokai.xml",
+                    "eclipse.xml", "idea.xml", "vs.xml"
+            }[k], v -> this.textEditorThemeList[v]));
     private PlaceHolderTextField importText;
     private JButton addImportBtn;
     private JList<String> importList;
@@ -67,14 +75,10 @@ public class SettingsView {
             "Default", "Default (System Selection)", "Dark", "Druid",
             "Monokai", "Eclipse", "IDEA", "Visual Studio"
     };
-    private final Map<String, String> textEditorThemes = IntStream.range(0, this.textEditorThemeList.length)
-            .boxed()
-            .collect(Collectors.toMap(k -> this.textEditorThemeList[k], v -> new String[]{
-                    "default.xml", "default-alt.xml", "dark.xml", "druid.xml", "monokai.xml",
-                    "eclipse.xml", "idea.xml", "vs.xml"
-            }[v]));
+    private JCheckBox wordWrapCheck;
 
-    public SettingsView(List<TextEditor> textEditors) {
+    public SettingsView(List<TextEditor> textEditors, SettingsModel settings) {
+        this.settings = settings;
         this.textEditors = textEditors;
         this.setupAppearance();
         this.setupDependenciesView();
@@ -122,7 +126,7 @@ public class SettingsView {
             }
         });
         for (int i = 0; i < this.fontComboBox.getItemCount(); i++) {
-            if (Objects.equals(this.fontComboBox.getItemAt(i).getName(), font.getName())) {
+            if (Objects.equals(this.fontComboBox.getItemAt(i).getFontName(), font.getFontName())) {
                 this.fontComboBox.setSelectedIndex(i);
                 break;
             }
@@ -133,9 +137,22 @@ public class SettingsView {
         panel.add(new JLabel("Editor theme"), gbc);
         gbc.gridx = 1;
         this.textEditorThemeComboBox = new JComboBox<>(this.textEditorThemeList);
+        if (this.settings != null) {
+            String theme = this.settings.getTheme();
+            this.textEditorThemeComboBox.setSelectedItem(
+                    this.textEditorThemes.get(theme.substring(theme.lastIndexOf('/') + 1))
+            );
+        }
         panel.add(this.textEditorThemeComboBox, gbc);
         gbc.gridx = 0;
         gbc.gridy = 3;
+        panel.add(new JLabel("Word Wrap"), gbc);
+        gbc.gridx = 1;
+        this.wordWrapCheck = new JCheckBox();
+        this.wordWrapCheck.setSelected(this.textEditors.get(0).getWrapStyleWord());
+        panel.add(this.wordWrapCheck, gbc);
+        gbc.gridx = 0;
+        gbc.gridy = 4;
         panel.add(new JLabel("Change look and feel"), gbc);
         gbc.gridx = 1;
         this.lafComboBox = new JComboBox<>(UIManager.getInstalledLookAndFeels());
@@ -156,7 +173,7 @@ public class SettingsView {
             }
         }
         panel.add(this.lafComboBox, gbc);
-        gbc.gridy = 4;
+        gbc.gridy = 5;
         this.saveAppearanceButton = new JButton();
         this.saveAppearanceButton.setIcon(FontIcon.of(FontAwesomeSolid.SAVE, 15));
         this.saveAppearanceButton.addActionListener(event -> this.saveAppearanceChanges());
@@ -167,34 +184,46 @@ public class SettingsView {
 
     private void saveAppearanceChanges() {
         try {
+            String themeLocation = String.format(
+                    "/org/fife/ui/rsyntaxtextarea/themes/%s",
+                    this.textEditorThemes.entrySet()
+                            .stream()
+                            .filter(kv -> kv.getValue().equals(this.textEditorThemeComboBox.getSelectedItem()))
+                            .map(Map.Entry::getKey)
+                            .findFirst()
+                            .orElse("default.xml")
+            );
+            InputStream in = this.getClass().getResourceAsStream(themeLocation);
+            Theme theme = Theme.load(in);
+            Font font = Utils.deriveFont(
+                    null, Font.PLAIN,
+                    Integer.parseInt(String.valueOf(this.fontSizeSpinner.getValue())),
+                    ((Font) this.fontComboBox.getSelectedItem())
+            );
+            boolean wordWrap = this.wordWrapCheck.isSelected();
+            String laf = ((UIManager.LookAndFeelInfo) this.lafComboBox.getSelectedItem()).getClassName();
             SwingUtilities.invokeLater(new Runnable() {
                 @Override
                 public void run() {
-                    try {
-                        InputStream in = this.getClass().getResourceAsStream(
-                                String.format(
-                                        "/org/fife/ui/rsyntaxtextarea/themes/%s",
-                                        textEditorThemes.get(textEditorThemeComboBox.getSelectedItem())
-                                )
-                        );
-                        Theme theme = Theme.load(in);
-                        for (TextEditor textEditor : textEditors) {
-                            theme.apply(textEditor);
-                            textEditor.setFont(((Font) fontComboBox.getSelectedItem()).deriveFont(
-                                    Float.parseFloat(String.valueOf(fontSizeSpinner.getValue())))
-                            );
-                        }
-                    } catch (IOException e) {
-                        throw new RuntimeException(e);
+                    for (TextEditor textEditor : SettingsView.this.textEditors) {
+                        theme.apply(textEditor);
+                        textEditor.setFont(font);
+                        textEditor.setLineWrap(wordWrap);
                     }
                 }
             });
-            UIManager.setLookAndFeel(((UIManager.LookAndFeelInfo) this.lafComboBox.getSelectedItem()).getClassName());
+            UIManager.setLookAndFeel(laf);
             SwingUtilities.updateComponentTreeUI(this.dialog);
             SwingUtilities.updateComponentTreeUI(JOptionPane.getFrameForComponent(this.textEditors.get(0)));
             //TODO: Save to file
+            SettingsModel settings = new SettingsModel();
+            settings.setFont(font);
+            settings.setTheme(themeLocation);
+            settings.setWordWrap(wordWrap);
+            settings.setLookAndFeel(laf);
+            this.handler.writeSettingsXml(settings);
         } catch (UnsupportedLookAndFeelException | ClassNotFoundException | InstantiationException |
-                 IllegalAccessException ioe) {
+                 IllegalAccessException | IOException ioe) {
             throw new RuntimeException(ioe);
         }
     }
