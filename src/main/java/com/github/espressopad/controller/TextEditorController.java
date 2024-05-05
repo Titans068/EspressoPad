@@ -24,10 +24,13 @@ import java.awt.Frame;
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Locale;
+import java.util.ResourceBundle;
 
 public class TextEditorController {
     private FindDialog findDialog;
     private ReplaceDialog replaceDialog;
+    private final ResourceBundle resourceBundle = ResourceBundle.getBundle("messages", Locale.getDefault());
 
     public void undo(TextEditor textEditor) {
         if (textEditor.canUndo())
@@ -83,8 +86,8 @@ public class TextEditorController {
 
         Object goTo = JOptionPane.showInputDialog(
                 frame,
-                "Go to line",
-                "Go to line",
+                this.resourceBundle.getString("go.to.line"),
+                this.resourceBundle.getString("go.to.line"),
                 JOptionPane.QUESTION_MESSAGE,
                 UIManager.getIcon("OptionPane.questionIcon"),
                 null,
@@ -103,8 +106,8 @@ public class TextEditorController {
                         UIManager.getLookAndFeel().provideErrorFeedback(textEditor);
                         JOptionPane.showMessageDialog(
                                 frame,
-                                "Invalid line",
-                                "Go to line",
+                                TextEditorController.this.resourceBundle.getString("invalid.line"),
+                                TextEditorController.this.resourceBundle.getString("go.to.line"),
                                 JOptionPane.ERROR_MESSAGE
                         );
                         throw new RuntimeException(e);
@@ -147,7 +150,8 @@ public class TextEditorController {
             end = textEditor.getSelectionEnd();
         }
 
-        try (Reader reader = new BufferedReader(new StringReader(textEditor.getText(start, end - start)));
+        try (StringReader stringReader = new StringReader(textEditor.getText(start, end - start));
+             Reader reader = new BufferedReader(stringReader);
              Writer writer = new StringWriter()) {
             formatter.format(reader, writer);
             textEditor.replaceRange(writer.toString(), start, end);
@@ -179,10 +183,10 @@ public class TextEditorController {
     public File saveFileAs(ViewModel viewModel) {
         try {
             JFileChooser chooser = new JFileChooser();
-            chooser.setFileFilter(new FileNameExtensionFilter("JSH file", "jsh"));
+            chooser.setFileFilter(new FileNameExtensionFilter(this.resourceBundle.getString("jsh.file"), "jsh"));
             if (chooser.showSaveDialog(viewModel.getTab()) == JFileChooser.APPROVE_OPTION) {
                 File selectedFile = chooser.getSelectedFile();
-                String fileName = selectedFile.getName() + ".jsh";
+                String fileName = String.format("%s.jsh", selectedFile.getName());
                 Path path = Path.of(selectedFile.getParent(), fileName);
                 Files.writeString(path, viewModel.getTextEditor().getText());
                 viewModel.getTextEditor().setDirty(false);
@@ -228,19 +232,19 @@ public class TextEditorController {
                     result = SearchEngine.replaceAll(this.textEditor, context);
                     JOptionPane.showMessageDialog(
                             JOptionPane.getFrameForComponent(this.textEditor),
-                            String.format("%d occurrences replaced.", result.getCount())
+                            String.format(TextEditorController.this.resourceBundle.getString("d.occurrences.replaced"), result.getCount())
                     );
                     break;
             }
 
             String text;
             if (result.wasFound())
-                text = String.format("Text found; occurrences marked: %d", result.getMarkedCount());
+                text = String.format(TextEditorController.this.resourceBundle.getString("text.found.occurrences.marked.d"), result.getMarkedCount());
             else if (type == SearchEvent.Type.MARK_ALL) {
                 if (result.getMarkedCount() > 0)
-                    text = String.format("Occurrences marked: %d", result.getMarkedCount());
+                    text = String.format(TextEditorController.this.resourceBundle.getString("occurrences.marked.d"), result.getMarkedCount());
                 else text = "";
-            } else text = "Text not found";
+            } else text = TextEditorController.this.resourceBundle.getString("text.not.found");
             this.statusBar.setFindOccurrencesLabel(text);
         }
 

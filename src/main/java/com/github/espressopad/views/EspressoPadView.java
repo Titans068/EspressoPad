@@ -30,10 +30,8 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
-import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
@@ -49,6 +47,8 @@ public class EspressoPadView extends JPanel {
     private final JFrame frame;
     private boolean ignore = false;
     private final SettingsModel settings;
+    private final ResourceBundle resourceBundle = ResourceBundle.getBundle("messages", Locale.getDefault());
+    private FileTree fileTree;
 
     public EspressoPadView(JFrame frame) {
         this.frame = frame;
@@ -81,24 +81,27 @@ public class EspressoPadView extends JPanel {
         DockFrontend frontend = new DockFrontend(this.frame);
         SplitDockStation splitDockStation = new SplitDockStation();
         frontend.addRoot("root", splitDockStation);
-        FileTree fileTree = new FileTree(Utils.validateDefaultDirectory().toFile());
-        fileTree.addMouseListener(new MouseAdapter() {
+        this.fileTree = new FileTree(Utils.validateDefaultDirectory().toFile());
+        this.fileTree.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
-                File file = controller.setupTreeMouseListener(fileTree, e);
+                File file = EspressoPadView.this.controller.setupTreeMouseListener(EspressoPadView.this.fileTree, e);
                 if (file != null) {
-                    openFile(file);
-                    closeAllDuplicateTabs();
+                    EspressoPadView.this.openFile(file);
+                    EspressoPadView.this.closeAllDuplicateTabs();
                 }
             }
         });
-        DefaultDockable fileTreeDockable = Utils.createDockable(new JScrollPane(fileTree), "File Tree");
+        DefaultDockable fileTreeDockable = Utils.createDockable(
+                new JScrollPane(this.fileTree),
+                this.resourceBundle.getString("file.tree")
+        );
         fileTreeDockable.setTitleIcon(FontIcon.of(FontAwesomeRegular.FILE_ALT, 15));
         frontend.addDockable("fileTree", fileTreeDockable);
         frontend.setHideable(fileTreeDockable, true);
         frontend.addFrontendListener(new FrontendAdapter(fileTreeDockable, frontend));
         splitDockStation.drop(fileTreeDockable, new SplitDockProperty(0, 0, .25, 1));
-        DefaultDockable tabPaneDockable = Utils.createDockable(this.tabPane, "Open Files");
+        DefaultDockable tabPaneDockable = Utils.createDockable(this.tabPane, this.resourceBundle.getString("open.files"));
         tabPaneDockable.setTitleIcon(FontIcon.of(FontAwesomeSolid.FILE_CODE, 11));
         frontend.addDockable("results", tabPaneDockable);
         frontend.setHideable(tabPaneDockable, false);
@@ -126,53 +129,53 @@ public class EspressoPadView extends JPanel {
 
     private void setupToolBar() {
         JButton newFileBtn = new JButton(FontIcon.of(FontAwesomeSolid.FILE, 15));
-        newFileBtn.setToolTipText("New File");
+        newFileBtn.setToolTipText(this.resourceBundle.getString("new.file"));
         newFileBtn.addActionListener(event -> this.createTab(true));
         this.toolBar.add(newFileBtn);
 
         JButton openFileBtn = new JButton(FontIcon.of(FontAwesomeSolid.FOLDER_OPEN, 15));
-        openFileBtn.setToolTipText("Open File");
+        openFileBtn.setToolTipText(this.resourceBundle.getString("open.file"));
         openFileBtn.addActionListener(event -> this.openFile());
         this.toolBar.add(openFileBtn);
 
         JButton saveFileBtn = new JButton(FontIcon.of(FontAwesomeSolid.SAVE, 15));
-        saveFileBtn.setToolTipText("Save");
+        saveFileBtn.setToolTipText(this.resourceBundle.getString("save"));
         saveFileBtn.addActionListener(event -> this.saveFile());
         this.toolBar.add(saveFileBtn);
 
         this.toolBar.addSeparator();
 
         JButton undoFileBtn = new JButton(FontIcon.of(FontAwesomeSolid.UNDO, 15));
-        undoFileBtn.setToolTipText("Undo");
+        undoFileBtn.setToolTipText(this.resourceBundle.getString("undo"));
         undoFileBtn.addActionListener(event -> this.editorController.undo(this.getCurrentTextEditor()));
         this.toolBar.add(undoFileBtn);
 
         JButton redoFileBtn = new JButton(FontIcon.of(FontAwesomeSolid.REDO, 15));
-        redoFileBtn.setToolTipText("Redo");
+        redoFileBtn.setToolTipText(this.resourceBundle.getString("redo"));
         redoFileBtn.addActionListener(event -> this.editorController.redo(this.getCurrentTextEditor()));
         this.toolBar.add(redoFileBtn);
 
         this.toolBar.addSeparator();
 
         JButton cutFileBtn = new JButton(FontIcon.of(FontAwesomeSolid.CUT, 15));
-        cutFileBtn.setToolTipText("Cut");
+        cutFileBtn.setToolTipText(this.resourceBundle.getString("cut"));
         cutFileBtn.addActionListener(event -> this.editorController.cut(this.getCurrentTextEditor()));
         this.toolBar.add(cutFileBtn);
 
         JButton copyFileBtn = new JButton(FontIcon.of(FontAwesomeSolid.COPY, 15));
-        copyFileBtn.setToolTipText("Copy");
+        copyFileBtn.setToolTipText(this.resourceBundle.getString("copy"));
         copyFileBtn.addActionListener(event -> this.editorController.copy(this.getCurrentTextEditor()));
         this.toolBar.add(copyFileBtn);
 
         JButton pasteFileBtn = new JButton(FontIcon.of(FontAwesomeSolid.PASTE, 15));
-        pasteFileBtn.setToolTipText("Paste");
+        pasteFileBtn.setToolTipText(this.resourceBundle.getString("paste"));
         pasteFileBtn.addActionListener(event -> this.editorController.paste(this.getCurrentTextEditor()));
         this.toolBar.add(pasteFileBtn);
 
         this.toolBar.addSeparator();
 
         JButton findBtn = new JButton(FontIcon.of(FontAwesomeSolid.SEARCH, 15));
-        findBtn.setToolTipText("Find");
+        findBtn.setToolTipText(this.resourceBundle.getString("find"));
         findBtn.addActionListener(event ->
                 this.editorController.findAction(
                         this.getCurrentTextEditor(), this.getCurrentViewModel().getStatusBar())
@@ -182,7 +185,7 @@ public class EspressoPadView extends JPanel {
         this.toolBar.addSeparator();
 
         JButton runBtn = new JButton(FontIcon.of(FontAwesomeSolid.PLAY, 15));
-        runBtn.setToolTipText("Run");
+        runBtn.setToolTipText(this.resourceBundle.getString("run"));
         runBtn.addActionListener(event -> this.controller.run(this.getCurrentViewModel()));
         this.toolBar.add(runBtn);
 
@@ -192,16 +195,16 @@ public class EspressoPadView extends JPanel {
     }
 
     private void setupMenuBar() {
-        JMenu fileMenu = new JMenu("File");
+        JMenu fileMenu = new JMenu(this.resourceBundle.getString("file"));
         int ctrlDownMask = Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx();
 
-        JMenuItem newFileItem = new JMenuItem("New File");
+        JMenuItem newFileItem = new JMenuItem(this.resourceBundle.getString("new.file"));
         newFileItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_N, ctrlDownMask));
         newFileItem.setMnemonic('N');
         newFileItem.addActionListener(event -> this.createTab(true));
         fileMenu.add(newFileItem);
 
-        JMenuItem openFileItem = new JMenuItem("Open File");
+        JMenuItem openFileItem = new JMenuItem(this.resourceBundle.getString("open.file"));
         openFileItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_O, ctrlDownMask));
         openFileItem.setMnemonic('O');
         openFileItem.addActionListener(event -> this.openFile());
@@ -209,13 +212,13 @@ public class EspressoPadView extends JPanel {
 
         fileMenu.add(new JSeparator());
 
-        JMenuItem saveFileItem = new JMenuItem("Save File");
+        JMenuItem saveFileItem = new JMenuItem(this.resourceBundle.getString("save.file"));
         saveFileItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_S, ctrlDownMask));
         saveFileItem.setMnemonic('S');
         saveFileItem.addActionListener(event -> this.saveFile());
         fileMenu.add(saveFileItem);
 
-        JMenuItem saveAsFileItem = new JMenuItem("Save File As");
+        JMenuItem saveAsFileItem = new JMenuItem(this.resourceBundle.getString("save.file.as"));
         saveAsFileItem.setAccelerator(
                 KeyStroke.getKeyStroke(KeyEvent.VK_S, ctrlDownMask | InputEvent.SHIFT_DOWN_MASK)
         );
@@ -225,7 +228,7 @@ public class EspressoPadView extends JPanel {
 
         fileMenu.add(new JSeparator());
 
-        JMenuItem closeFileItem = new JMenuItem("Close File");
+        JMenuItem closeFileItem = new JMenuItem(this.resourceBundle.getString("close.file"));
         closeFileItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_W, ctrlDownMask));
         closeFileItem.setMnemonic('C');
         closeFileItem.addActionListener(event -> this.removeCurrentTab());
@@ -233,19 +236,19 @@ public class EspressoPadView extends JPanel {
 
         fileMenu.add(new JSeparator());
 
-        JMenuItem exitItem = new JMenuItem("Exit");
+        JMenuItem exitItem = new JMenuItem(this.resourceBundle.getString("exit"));
         exitItem.setMnemonic('x');
         exitItem.addActionListener(event -> this.exit());
         fileMenu.add(exitItem);
 
-        JMenu editMenu = new JMenu("Edit");
-        JMenuItem undoItem = new JMenuItem("Undo");
+        JMenu editMenu = new JMenu(this.resourceBundle.getString("edit"));
+        JMenuItem undoItem = new JMenuItem(this.resourceBundle.getString("undo"));
         undoItem.setMnemonic('u');
         undoItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_Z, ctrlDownMask));
         undoItem.addActionListener(event -> this.editorController.undo(this.getCurrentTextEditor()));
         editMenu.add(undoItem);
 
-        JMenuItem redoItem = new JMenuItem("Redo");
+        JMenuItem redoItem = new JMenuItem(this.resourceBundle.getString("redo"));
         redoItem.setMnemonic('r');
         redoItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_Y, ctrlDownMask));
         redoItem.addActionListener(event -> this.editorController.redo(this.getCurrentTextEditor()));
@@ -253,19 +256,19 @@ public class EspressoPadView extends JPanel {
 
         editMenu.add(new JSeparator());
 
-        JMenuItem cutItem = new JMenuItem("Cut");
+        JMenuItem cutItem = new JMenuItem(this.resourceBundle.getString("cut"));
         cutItem.setMnemonic('t');
         cutItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_X, ctrlDownMask));
         cutItem.addActionListener(event -> this.editorController.cut(this.getCurrentTextEditor()));
         editMenu.add(cutItem);
 
-        JMenuItem copyItem = new JMenuItem("Copy");
+        JMenuItem copyItem = new JMenuItem(this.resourceBundle.getString("copy"));
         copyItem.setMnemonic('c');
         copyItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_C, ctrlDownMask));
         copyItem.addActionListener(event -> this.editorController.copy(this.getCurrentTextEditor()));
         editMenu.add(copyItem);
 
-        JMenuItem pasteItem = new JMenuItem("Paste");
+        JMenuItem pasteItem = new JMenuItem(this.resourceBundle.getString("paste"));
         pasteItem.setMnemonic('p');
         pasteItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_V, ctrlDownMask));
         pasteItem.addActionListener(event -> this.editorController.paste(this.getCurrentTextEditor()));
@@ -273,7 +276,7 @@ public class EspressoPadView extends JPanel {
 
         editMenu.add(new JSeparator());
 
-        JMenuItem findItem = new JMenuItem("Find");
+        JMenuItem findItem = new JMenuItem(this.resourceBundle.getString("find"));
         findItem.setMnemonic('f');
         findItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_F, ctrlDownMask));
         findItem.addActionListener(event ->
@@ -284,7 +287,7 @@ public class EspressoPadView extends JPanel {
         );
         editMenu.add(findItem);
 
-        JMenuItem replaceItem = new JMenuItem("Replace");
+        JMenuItem replaceItem = new JMenuItem(this.resourceBundle.getString("replace"));
         replaceItem.setMnemonic('e');
         replaceItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_R, ctrlDownMask));
         replaceItem.addActionListener(event ->
@@ -297,26 +300,26 @@ public class EspressoPadView extends JPanel {
 
         editMenu.add(new JSeparator());
 
-        JMenuItem selectAllItem = new JMenuItem("Select All");
+        JMenuItem selectAllItem = new JMenuItem(this.resourceBundle.getString("select.all"));
         selectAllItem.setMnemonic('a');
         selectAllItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_A, ctrlDownMask));
         selectAllItem.addActionListener(event -> this.editorController.selectAll(this.getCurrentTextEditor()));
         editMenu.add(selectAllItem);
 
-        JMenuItem goToLineItem = new JMenuItem("Go to line");
+        JMenuItem goToLineItem = new JMenuItem(this.resourceBundle.getString("go.to.line"));
         goToLineItem.setMnemonic('g');
         goToLineItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_G, ctrlDownMask));
         goToLineItem.addActionListener(event -> this.editorController.setupGoToLine(this.getCurrentTextEditor()));
         editMenu.add(goToLineItem);
 
-        JMenuItem duplicateSelectionItem = new JMenuItem("Duplicate");
+        JMenuItem duplicateSelectionItem = new JMenuItem(this.resourceBundle.getString("duplicate"));
         duplicateSelectionItem.setMnemonic('d');
         duplicateSelectionItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_T, ctrlDownMask));
         duplicateSelectionItem.addActionListener(event ->
                 this.editorController.duplicateSelectionAction(this.getCurrentTextEditor()));
         editMenu.add(duplicateSelectionItem);
 
-        JMenuItem reformatSelectionItem = new JMenuItem("Reformat");
+        JMenuItem reformatSelectionItem = new JMenuItem(this.resourceBundle.getString("reformat"));
         reformatSelectionItem.setMnemonic('o');
         reformatSelectionItem.setAccelerator(
                 KeyStroke.getKeyStroke(KeyEvent.VK_L, ctrlDownMask | InputEvent.ALT_DOWN_MASK)
@@ -325,13 +328,13 @@ public class EspressoPadView extends JPanel {
                 this.editorController.reformatSelectionAction(this.getCurrentTextEditor()));
         editMenu.add(reformatSelectionItem);
 
-        JMenu runMenu = new JMenu("Run");
-        JMenuItem runMenuItem = new JMenuItem("Execute");
+        JMenu runMenu = new JMenu(this.resourceBundle.getString("run"));
+        JMenuItem runMenuItem = new JMenuItem(this.resourceBundle.getString("run"));
         runMenuItem.addActionListener(event -> this.controller.run(this.getCurrentViewModel()));
         runMenu.add(runMenuItem);
 
-        JMenu toolsMenu = new JMenu("Tools");
-        JMenuItem settingsMenuItem = new JMenuItem("Settings");
+        JMenu toolsMenu = new JMenu(this.resourceBundle.getString("tools"));
+        JMenuItem settingsMenuItem = new JMenuItem(this.resourceBundle.getString("settings"));
         settingsMenuItem.addActionListener(event ->
                 new SettingsView(
                         this.viewModels.stream().map(ViewModel::getTextEditor).collect(Collectors.toList()),
@@ -340,8 +343,8 @@ public class EspressoPadView extends JPanel {
         );
         toolsMenu.add(settingsMenuItem);
 
-        JMenu helpMenu = new JMenu("Help");
-        JMenuItem aboutMenuItem = new JMenuItem("About");
+        JMenu helpMenu = new JMenu(this.resourceBundle.getString("help"));
+        JMenuItem aboutMenuItem = new JMenuItem(this.resourceBundle.getString("about"));
         aboutMenuItem.addActionListener(event -> new AboutView(this.frame).show());
         helpMenu.add(aboutMenuItem);
 
@@ -364,8 +367,8 @@ public class EspressoPadView extends JPanel {
     private JPanel createTab(boolean prepend) {
         String title;
         if (this.tabPane.getTabCount() > 1)
-            title = String.format("Tab%d", tabCounter.incrementAndGet());
-        else title = "Tab1";
+            title = String.format(this.resourceBundle.getString("tab.d"), tabCounter.incrementAndGet());
+        else title = this.resourceBundle.getString("tab1");
         ViewModel model = new ViewModel();
         this.setupTab(model, title);
 
@@ -397,7 +400,7 @@ public class EspressoPadView extends JPanel {
         controller.addDockable("document", textDock);
         controller.setHideable(textDock, false);
         station.drop(textDock, new SplitDockProperty(0, 0, 1, .6));
-        DefaultDockable dockable = Utils.createDockable(panel, "Results");
+        DefaultDockable dockable = Utils.createDockable(panel, this.resourceBundle.getString("results"));
         dockable.setTitleIcon(FontIcon.of(FontAwesomeSolid.GLASSES, 11));
         controller.addDockable("results", dockable);
         controller.setHideable(dockable, false);
@@ -408,7 +411,7 @@ public class EspressoPadView extends JPanel {
 
     private void openFile() {
         JFileChooser chooser = new JFileChooser();
-        chooser.setFileFilter(new FileNameExtensionFilter("JSH file", "jsh"));
+        chooser.setFileFilter(new FileNameExtensionFilter(this.resourceBundle.getString("jsh.file"), "jsh"));
         if (chooser.showOpenDialog(this.frame) == JFileChooser.APPROVE_OPTION) {
             this.openFile(chooser.getSelectedFile());
             this.closeAllDuplicateTabs();
@@ -450,7 +453,7 @@ public class EspressoPadView extends JPanel {
                 if (icon != null && FontAwesomeSolid.PLUS.getCode() == icon.getIkon().getCode() &&
                         selected == this.tabPane.getTabCount() - 1) {
                     JPanel pane = this.createTab(false);
-                    String tl = String.format("Tab%d", tabCounter.get());
+                    String tl = String.format(this.resourceBundle.getString("tab.d"), tabCounter.get());
                     this.tabPane.insertTab(tl, null, pane, null, this.tabPane.getTabCount() - 2);
                     this.tabPane.setSelectedComponent(pane);
                     this.setupClosableTabs(tl);
@@ -492,7 +495,7 @@ public class EspressoPadView extends JPanel {
         btnClose.setBorder(border);
         btnClose.setContentAreaFilled(false);
         btnClose.setFocusable(false);
-        btnClose.addActionListener(e -> removeCurrentTab());
+        btnClose.addActionListener(e -> this.removeCurrentTab());
 
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.gridx = 0;
@@ -513,9 +516,9 @@ public class EspressoPadView extends JPanel {
         this.tabPane.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
-                if (tabPane.getBoundsAt(tabPane.getSelectedIndex()).contains(e.getPoint()) &&
+                if (EspressoPadView.this.tabPane.getBoundsAt(EspressoPadView.this.tabPane.getSelectedIndex()).contains(e.getPoint()) &&
                         SwingUtilities.isMiddleMouseButton(e))
-                    removeCurrentTab();
+                    EspressoPadView.this.removeCurrentTab();
             }
         });
     }
@@ -589,14 +592,14 @@ public class EspressoPadView extends JPanel {
         }
     }
 
-    class WindowClosingListener extends WindowAdapter {
+    private class WindowClosingListener extends WindowAdapter {
         @Override
         public void windowClosing(WindowEvent e) {
-            exit();
+            EspressoPadView.this.exit();
         }
     }
 
-    class FrontendAdapter extends DockFrontendAdapter {
+    private class FrontendAdapter extends DockFrontendAdapter {
         private final JButton showFileTree;
         private final DefaultDockable fileTreeDockable;
         private final DockFrontend frontend;
@@ -605,7 +608,7 @@ public class EspressoPadView extends JPanel {
             this.fileTreeDockable = fileTreeDockable;
             this.frontend = frontend;
             this.showFileTree = new JButton(FontIcon.of(FontAwesomeSolid.WINDOW_RESTORE, 15));
-            this.showFileTree.setToolTipText("Restore Default View");
+            this.showFileTree.setToolTipText(EspressoPadView.this.resourceBundle.getString("restore.default.view"));
             this.showFileTree.addActionListener(this::setupShowFileTree);
         }
 

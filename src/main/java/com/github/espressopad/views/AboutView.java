@@ -16,8 +16,10 @@ import java.awt.event.ActionListener;
 import java.io.IOException;
 import java.net.URI;
 import java.time.Year;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.ResourceBundle;
 import java.util.stream.Collectors;
 
 public class AboutView {
@@ -28,6 +30,7 @@ public class AboutView {
     private JTable propertiesTable;
     private JTextField filterPropertiesText;
     private JButton viewGithubBtn;
+    private final ResourceBundle resourceBundle = ResourceBundle.getBundle("messages", Locale.getDefault());
 
     public AboutView(JFrame frame) {
         this.frame = frame;
@@ -36,7 +39,7 @@ public class AboutView {
 
         this.buttonOK.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-                onOK();
+                AboutView.this.onOK();
             }
         });
     }
@@ -54,7 +57,7 @@ public class AboutView {
     }
 
     public void show() {
-        this.dialog.setTitle("About Espresso Pad");
+        this.dialog.setTitle(this.resourceBundle.getString("about.espresso.pad"));
         this.dialog.setContentPane(this.contentPane);
         this.dialog.setModal(true);
         this.dialog.getRootPane().setDefaultButton(this.buttonOK);
@@ -89,7 +92,7 @@ public class AboutView {
         this.contentPane.add(tabbedPane1, BorderLayout.CENTER);
         JPanel panel2 = new JPanel();
         panel2.setLayout(new GridBagLayout());
-        tabbedPane1.addTab("Properties", panel2);
+        tabbedPane1.addTab(this.resourceBundle.getString("properties"), panel2);
         this.propertiesTable = new JTable();
         this.propertiesTable.setDefaultRenderer(Object.class, new MultiLineCellRenderer());
         gbc = new GridBagConstraints();
@@ -100,7 +103,7 @@ public class AboutView {
         gbc.insets = new Insets(10, 10, 10, 10);
         panel2.add(new JScrollPane(this.propertiesTable), gbc);
         this.filterPropertiesText = new JTextField();
-        this.filterPropertiesText.setBorder(BorderFactory.createTitledBorder("Filter Properties"));
+        this.filterPropertiesText.setBorder(BorderFactory.createTitledBorder(this.resourceBundle.getString("filter.properties")));
         gbc = new GridBagConstraints();
         gbc.gridx = 0;
         gbc.gridy = 0;
@@ -112,9 +115,9 @@ public class AboutView {
         panel2.add(this.filterPropertiesText, gbc);
         JPanel panel3 = new JPanel();
         panel3.setLayout(new GridBagLayout());
-        tabbedPane1.addTab("Libraries Used", new JScrollPane(panel3));
+        tabbedPane1.addTab(this.resourceBundle.getString("libraries.used"), new JScrollPane(panel3));
         JLabel label1 = new JLabel();
-        label1.setText("Espresso Pad uses the following libraries:");
+        label1.setText(this.resourceBundle.getString("espresso.pad.uses.the.following.libraries"));
         gbc = new GridBagConstraints();
         gbc.gridx = 0;
         gbc.gridy = 0;
@@ -133,7 +136,7 @@ public class AboutView {
         gbc.gridy = 1;
         gbc.fill = GridBagConstraints.VERTICAL;
         panel3.add(spacer3, gbc);
-        HyperlinkLabel label9 = new HyperlinkLabel("RSyntaxTextArea by bobbylight");
+        HyperlinkLabel label9 = new HyperlinkLabel(this.resourceBundle.getString("rsyntaxtextarea.by.bobbylight"));
         label9.setURL("https://github.com/bobbylight/RSyntaxTextArea");
         gbc = new GridBagConstraints();
         gbc.gridx = 0;
@@ -141,7 +144,7 @@ public class AboutView {
         gbc.anchor = GridBagConstraints.WEST;
         gbc.insets = new Insets(0, 0, 10, 0);
         panel3.add(label9, gbc);
-        HyperlinkLabel label2 = new HyperlinkLabel("Ikonli by Kordamp");
+        HyperlinkLabel label2 = new HyperlinkLabel(this.resourceBundle.getString("ikonli.by.kordamp"));
         label2.setURL("https://github.com/kordamp/ikonli");
         gbc = new GridBagConstraints();
         gbc.gridx = 0;
@@ -149,7 +152,7 @@ public class AboutView {
         gbc.anchor = GridBagConstraints.WEST;
         gbc.insets = new Insets(0, 0, 10, 0);
         panel3.add(label2, gbc);
-        HyperlinkLabel label3 = new HyperlinkLabel("Maven Archeologist by Square");
+        HyperlinkLabel label3 = new HyperlinkLabel(this.resourceBundle.getString("maven.archeologist.by.square"));
         label3.setURL("https://github.com/square/maven-archeologist");
         gbc = new GridBagConstraints();
         gbc.gridx = 0;
@@ -157,7 +160,7 @@ public class AboutView {
         gbc.anchor = GridBagConstraints.WEST;
         gbc.insets = new Insets(0, 0, 10, 0);
         panel3.add(label3, gbc);
-        HyperlinkLabel label4 = new HyperlinkLabel("jAstyle by Abrar Syed");
+        HyperlinkLabel label4 = new HyperlinkLabel(this.resourceBundle.getString("jastyle.by.abrar.syed"));
         label4.setURL("https://github.com/AbrarSyed/jastyle");
         gbc = new GridBagConstraints();
         gbc.gridx = 0;
@@ -211,7 +214,7 @@ public class AboutView {
         JLabel label10 = new JLabel();
         Font label10Font = Utils.deriveFont(null, Font.BOLD, 26, label10.getFont());
         if (label10Font != null) label10.setFont(label10Font);
-        label10.setText("Espresso Pad");
+        label10.setText(this.resourceBundle.getString("espresso.pad"));
         gbc = new GridBagConstraints();
         gbc.gridx = 0;
         gbc.gridy = 0;
@@ -228,7 +231,7 @@ public class AboutView {
         panel4.add(label11, gbc);
         this.viewGithubBtn = new JButton();
         this.viewGithubBtn.setIcon(FontIcon.of(FontAwesomeBrands.GITHUB, 15));
-        this.viewGithubBtn.setToolTipText("View My Github Profile");
+        this.viewGithubBtn.setToolTipText(this.resourceBundle.getString("view.my.github.profile"));
         this.viewGithubBtn.addActionListener(this::browseGithub);
         this.viewGithubBtn.setText("");
         gbc = new GridBagConstraints();
@@ -255,7 +258,8 @@ public class AboutView {
                 .map(x -> Map.entry(String.valueOf(x.getKey()), String.valueOf(x.getValue())))
                 .filter(x -> !Objects.equals(x.getKey(), "line.separator"))
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-        DefaultTableModel tableModel = new DefaultTableModel(new Object[]{"Property Key", "Property Value"}, 0) {
+        DefaultTableModel tableModel = new DefaultTableModel(new Object[]{
+                this.resourceBundle.getString("property.key"), this.resourceBundle.getString("property.value")}, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
                 return false;

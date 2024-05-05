@@ -9,10 +9,13 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.IOException;
 import java.net.URI;
+import java.util.Locale;
+import java.util.ResourceBundle;
 
 public class HyperlinkLabel extends JLabel {
     private String url;
     private final String html = "<html><a href=''>%s</a></html>";
+    private final ResourceBundle resourceBundle = ResourceBundle.getBundle("messages", Locale.getDefault());
 
     public HyperlinkLabel(String text) {
         this(text, null, null);
@@ -35,12 +38,12 @@ public class HyperlinkLabel extends JLabel {
         this.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseEntered(MouseEvent e) {
-                setText(String.format(HyperlinkLabel.this.html, text));
+                HyperlinkLabel.this.setText(String.format(HyperlinkLabel.this.html, text));
             }
 
             @Override
             public void mouseExited(MouseEvent e) {
-                setText(text);
+                HyperlinkLabel.this.setText(text);
             }
 
             @Override
@@ -49,8 +52,8 @@ public class HyperlinkLabel extends JLabel {
                     Desktop.getDesktop().browse(URI.create(HyperlinkLabel.this.url));
                 } catch (IOException e1) {
                     JOptionPane.showMessageDialog(HyperlinkLabel.this,
-                            String.format("Could not open the hyperlink. Error: %s", e1.getMessage()),
-                            "Error",
+                            String.format(HyperlinkLabel.this.resourceBundle.getString("could.not.open.the.hyperlink.error.s"), e1.getMessage()),
+                            HyperlinkLabel.this.resourceBundle.getString("error"),
                             JOptionPane.ERROR_MESSAGE);
                 }
             }

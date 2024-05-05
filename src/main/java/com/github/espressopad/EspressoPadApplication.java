@@ -6,10 +6,13 @@ import javax.swing.JFrame;
 import javax.swing.WindowConstants;
 import java.awt.BorderLayout;
 import java.awt.Dimension;
+import java.util.Locale;
+import java.util.ResourceBundle;
 
 public class EspressoPadApplication {
     public static void main(String[] args) {
-        JFrame frame = new JFrame("Espresso Pad");
+        ResourceBundle resourceBundle = ResourceBundle.getBundle("messages", Locale.getDefault());
+        JFrame frame = new JFrame(resourceBundle.getString("espresso.pad"));
         EspressoPadView root = new EspressoPadView(frame);
         frame.setLayout(new BorderLayout());
         frame.setSize(new Dimension(800, 700));

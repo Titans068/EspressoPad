@@ -3,18 +3,21 @@ package com.github.espressopad.views.components;
 import org.fife.rsta.ui.SizeGripIcon;
 
 import javax.swing.*;
+import java.util.Locale;
+import java.util.ResourceBundle;
 
 public class StatusBar extends JPanel {
     private final JLabel findOccurrencesLabel;
     private final JLabel statusLabel;
     private final JLabel characterPosition;
     private final JProgressBar progressBar;
+    private final ResourceBundle resourceBundle = ResourceBundle.getBundle("messages", Locale.getDefault());
 
     public StatusBar() {
-        this.statusLabel = new JLabel("Ready");
+        this.statusLabel = new JLabel(this.resourceBundle.getString("ready"));
         this.findOccurrencesLabel = new JLabel();
         this.characterPosition = new JLabel();
-        this.characterPosition.setToolTipText("Row:Column");
+        this.characterPosition.setToolTipText(this.resourceBundle.getString("row.column"));
         this.progressBar = new JProgressBar();
         this.setLayout(new BoxLayout(this, BoxLayout.LINE_AXIS));
         this.add(this.statusLabel);

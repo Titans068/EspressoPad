@@ -22,10 +22,8 @@ import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Collections;
 import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -50,9 +48,10 @@ public class SettingsView {
     private JList<String> installedArtifactsList;
     private JButton removeInstalledArtifactBtn;
     private JButton saveInstalledArtifactBtn;
+    private final ResourceBundle resourceBundle = ResourceBundle.getBundle("messages", Locale.getDefault());
     private final String[] textEditorThemeList = new String[]{
-            "Default", "Default (System Selection)", "Dark", "Druid",
-            "Monokai", "Eclipse", "IDEA", "Visual Studio"
+            this.resourceBundle.getString("default"), this.resourceBundle.getString("default.system.selection"),
+            this.resourceBundle.getString("dark"), "Druid", "Monokai", "Eclipse", "IDEA", "Visual Studio"
     };
     private final Map<String, String> textEditorThemes = IntStream.range(0, this.textEditorThemeList.length)
             .boxed()
@@ -91,7 +90,7 @@ public class SettingsView {
 
     public void show() {
         Frame frame = JOptionPane.getFrameForComponent(this.textEditors.get(0));
-        this.dialog = new JDialog(frame, "Settings", true);
+        this.dialog = new JDialog(frame, this.resourceBundle.getString("settings"), true);
         this.dialog.setSize(new Dimension(700, 500));
         this.dialog.setContentPane(this.view);
         this.dialog.setLocationRelativeTo(frame);
@@ -106,14 +105,14 @@ public class SettingsView {
         gbc.gridy = 0;
         gbc.insets = new Insets(5, 5, 5, 5);
         gbc.fill = GridBagConstraints.HORIZONTAL;
-        panel.add(new JLabel("Editor Font size"), gbc);
+        panel.add(new JLabel(this.resourceBundle.getString("editor.font.size")), gbc);
         gbc.gridx = 1;
         this.fontSizeModel = new SpinnerNumberModel(font.getSize(), 8, 36, 1);
         this.fontSizeSpinner = new JSpinner(this.fontSizeModel);
         panel.add(this.fontSizeSpinner, gbc);
         gbc.gridx = 0;
         gbc.gridy = 1;
-        panel.add(new JLabel("Editor Font"), gbc);
+        panel.add(new JLabel(this.resourceBundle.getString("editor.font")), gbc);
         gbc.gridx = 1;
         this.fontComboBox = new JComboBox<>(Utils.getMonospaceFonts());
         this.fontComboBox.setRenderer(new DefaultListCellRenderer() {
@@ -134,7 +133,7 @@ public class SettingsView {
         panel.add(this.fontComboBox, gbc);
         gbc.gridx = 0;
         gbc.gridy = 2;
-        panel.add(new JLabel("Editor theme"), gbc);
+        panel.add(new JLabel(this.resourceBundle.getString("editor.theme")), gbc);
         gbc.gridx = 1;
         this.textEditorThemeComboBox = new JComboBox<>(this.textEditorThemeList);
         if (this.settings != null) {
@@ -146,14 +145,14 @@ public class SettingsView {
         panel.add(this.textEditorThemeComboBox, gbc);
         gbc.gridx = 0;
         gbc.gridy = 3;
-        panel.add(new JLabel("Word Wrap"), gbc);
+        panel.add(new JLabel(this.resourceBundle.getString("word.wrap")), gbc);
         gbc.gridx = 1;
         this.wordWrapCheck = new JCheckBox();
         this.wordWrapCheck.setSelected(this.settings != null && this.settings.isWordWrap());
         panel.add(this.wordWrapCheck, gbc);
         gbc.gridx = 0;
         gbc.gridy = 4;
-        panel.add(new JLabel("Change look and feel"), gbc);
+        panel.add(new JLabel(this.resourceBundle.getString("change.look.and.feel")), gbc);
         gbc.gridx = 1;
         this.lafComboBox = new JComboBox<>(UIManager.getInstalledLookAndFeels());
         this.lafComboBox.setRenderer(new DefaultListCellRenderer() {
@@ -179,7 +178,7 @@ public class SettingsView {
         this.saveAppearanceButton.addActionListener(event -> this.saveAppearanceChanges());
         panel.add(this.saveAppearanceButton, gbc);
 
-        this.view.addTab("Appearance", panel);
+        this.view.addTab(this.resourceBundle.getString("appearance"), panel);
     }
 
     private void saveAppearanceChanges() {
@@ -215,7 +214,7 @@ public class SettingsView {
             UIManager.setLookAndFeel(laf);
             SwingUtilities.updateComponentTreeUI(this.dialog);
             SwingUtilities.updateComponentTreeUI(JOptionPane.getFrameForComponent(this.textEditors.get(0)));
-            //TODO: Save to file
+
             SettingsModel settings = new SettingsModel();
             settings.setFont(font.getFontName());
             settings.setFontSize(font.getSize());
@@ -238,7 +237,7 @@ public class SettingsView {
         panel.add(panel2, BorderLayout.NORTH);
         this.searchDependencyRadio = new JRadioButton();
         this.searchDependencyRadio.setSelected(true);
-        this.searchDependencyRadio.setText("Search for dependencies");
+        this.searchDependencyRadio.setText(this.resourceBundle.getString("search.for.dependencies"));
         this.searchDependencyRadio.addActionListener(event -> {
             this.deactivatePickJar();
             this.activateSearchDependencies();
@@ -251,7 +250,7 @@ public class SettingsView {
         gbc.anchor = GridBagConstraints.WEST;
         panel2.add(this.searchDependencyRadio, gbc);
         this.pickJarRadio = new JRadioButton();
-        this.pickJarRadio.setText("Pick Jar file");
+        this.pickJarRadio.setText(this.resourceBundle.getString("pick.jar.file"));
         this.pickJarRadio.addActionListener(event -> {
             this.deactivateSearchDependencies();
             this.activatePickJar();
@@ -271,7 +270,7 @@ public class SettingsView {
         gbc.fill = GridBagConstraints.BOTH;
         panel2.add(panel3, gbc);
         this.groupIDText = new PlaceHolderTextField();
-        this.groupIDText.setPlaceHolder("Group ID");
+        this.groupIDText.setPlaceHolder(this.resourceBundle.getString("group.id"));
         gbc.insets = defaultInsets;
         gbc.gridx = 0;
         gbc.gridy = 0;
@@ -280,7 +279,7 @@ public class SettingsView {
         gbc.fill = GridBagConstraints.HORIZONTAL;
         panel3.add(this.groupIDText, gbc);
         this.artifactIDText = new PlaceHolderTextField();
-        this.artifactIDText.setPlaceHolder("Artifact ID");
+        this.artifactIDText.setPlaceHolder(this.resourceBundle.getString("artifact.id"));
         gbc.gridx = 1;
         gbc.gridy = 0;
         gbc.weightx = 1.0;
@@ -288,7 +287,7 @@ public class SettingsView {
         gbc.fill = GridBagConstraints.HORIZONTAL;
         panel3.add(this.artifactIDText, gbc);
         this.extensionText = new PlaceHolderTextField();
-        this.extensionText.setPlaceHolder("Extension");
+        this.extensionText.setPlaceHolder(this.resourceBundle.getString("extension"));
         gbc.gridx = 2;
         gbc.gridy = 0;
         gbc.weightx = 1.0;
@@ -296,7 +295,7 @@ public class SettingsView {
         gbc.fill = GridBagConstraints.HORIZONTAL;
         panel3.add(this.extensionText, gbc);
         this.classifierText = new PlaceHolderTextField();
-        this.classifierText.setPlaceHolder("Classifier");
+        this.classifierText.setPlaceHolder(this.resourceBundle.getString("classifier"));
         gbc.gridx = 3;
         gbc.gridy = 0;
         gbc.weightx = 1.0;
@@ -304,7 +303,7 @@ public class SettingsView {
         gbc.fill = GridBagConstraints.HORIZONTAL;
         panel3.add(this.classifierText, gbc);
         this.versionText = new PlaceHolderTextField();
-        this.versionText.setPlaceHolder("Version");
+        this.versionText.setPlaceHolder(this.resourceBundle.getString("version"));
         gbc.gridx = 4;
         gbc.gridy = 0;
         gbc.weightx = 1.0;
@@ -321,7 +320,7 @@ public class SettingsView {
         gbc.fill = GridBagConstraints.HORIZONTAL;
         panel3.add(this.searchDependencyBtn, gbc);
         this.pickJarBtn = new JButton();
-        this.pickJarBtn.setText("Pick JAR");
+        this.pickJarBtn.setText(this.resourceBundle.getString("pick.jar"));
         this.pickJarBtn.addActionListener(event -> this.pickJar());
         gbc.gridx = 1;
         gbc.gridy = 1;
@@ -335,7 +334,7 @@ public class SettingsView {
         panel.add(panel4, BorderLayout.CENTER);
         this.searchResultsModel.addListDataListener(new SearchResultsDataListener());
         this.searchResultsList = new JList<>();
-        this.searchResultsList.setBorder(BorderFactory.createTitledBorder("Search Results"));
+        this.searchResultsList.setBorder(BorderFactory.createTitledBorder(this.resourceBundle.getString("search.results")));
         this.searchResultsList.setModel(this.searchResultsModel);
         gbc.gridx = 0;
         gbc.gridy = 0;
@@ -355,7 +354,7 @@ public class SettingsView {
             this.installedArtifactModel.addAll(this.handler.parseArtifactXml());
         this.installedArtifactModel.addListDataListener(new InstalledArtifactsDataListener());
         this.installedArtifactsList = new JList<>();
-        this.installedArtifactsList.setBorder(BorderFactory.createTitledBorder("Installed Artifacts"));
+        this.installedArtifactsList.setBorder(BorderFactory.createTitledBorder(this.resourceBundle.getString("installed.artifacts")));
         this.installedArtifactsList.setModel(this.installedArtifactModel);
         gbc.gridx = 2;
         gbc.gridy = 0;
@@ -384,7 +383,7 @@ public class SettingsView {
         gbc.fill = GridBagConstraints.HORIZONTAL;
         panel5.add(this.saveInstalledArtifactBtn, gbc);
 
-        this.view.addTab("Manage Dependencies", panel);
+        this.view.addTab(this.resourceBundle.getString("manage.dependencies"), panel);
         this.view.setTabPlacement(SwingConstants.LEFT);
     }
 
@@ -392,7 +391,7 @@ public class SettingsView {
         JPanel panel = new JPanel();
         panel.setLayout(new GridBagLayout());
         this.importText = new PlaceHolderTextField();
-        this.importText.setPlaceHolder("Wildcard import string e.g. java.net.*");
+        this.importText.setPlaceHolder(this.resourceBundle.getString("wildcard.import.string.e.g.java.net"));
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(5, 5, 5, 5);
         gbc.gridx = 0;
@@ -412,7 +411,7 @@ public class SettingsView {
         this.importsModel.addAll(this.handler.parseImportXml());
         this.importsModel.addListDataListener(new ImportsDataListener());
         this.importList = new JList<>();
-        this.importList.setBorder(BorderFactory.createTitledBorder("Default Imports"));
+        this.importList.setBorder(BorderFactory.createTitledBorder(this.resourceBundle.getString("default.imports")));
         this.importList.setModel(this.importsModel);
         gbc.gridx = 0;
         gbc.gridy = 1;
@@ -438,12 +437,12 @@ public class SettingsView {
         gbc.weighty = 0;
         panel.add(this.saveImportBtn, gbc);
 
-        this.view.addTab("Manage Imports", panel);
+        this.view.addTab(this.resourceBundle.getString("manage.imports"), panel);
     }
 
     private void pickJar() {
         JFileChooser chooser = new JFileChooser();
-        chooser.setFileFilter(new FileNameExtensionFilter("JAR file", "jar"));
+        chooser.setFileFilter(new FileNameExtensionFilter(this.resourceBundle.getString("jar.file"), "jar"));
         if (chooser.showOpenDialog(this.view) == JFileChooser.APPROVE_OPTION) {
             this.installedArtifactModel.addElement(chooser.getSelectedFile().getPath());
             this.saveInstalledArtifactBtn.setEnabled(true);
@@ -468,15 +467,15 @@ public class SettingsView {
     private void saveArtifacts() {
         List<String> artifacts = Collections.list(this.installedArtifactModel.elements());
         if (!artifacts.isEmpty()) {
-            this.logger.debug("Artifacts: {}", artifacts);
+            this.logger.debug(this.resourceBundle.getString("artifacts"), artifacts);
             for (String artifact : artifacts)
                 EspressoPadController.getShell().addToClasspath(artifact);
 
             this.handler.writeArtifactXml(artifacts);
             JOptionPane.showMessageDialog(
                     JOptionPane.getFrameForComponent(this.view),
-                    "Artifacts added to classpath.",
-                    "Changes saved",
+                    this.resourceBundle.getString("artifacts.added.to.classpath"),
+                    this.resourceBundle.getString("changes.saved"),
                     JOptionPane.INFORMATION_MESSAGE
             );
         }
@@ -537,7 +536,9 @@ public class SettingsView {
                                 resolvedArtifact.getModel().getDescription(), resolvedArtifact.getCoordinate()));
                 this.saveInstalledArtifactBtn.setEnabled(true);
             } else {
-                this.searchResultsModel.addElement(String.format("No results found for %s", dependencyString));
+                this.searchResultsModel.addElement(
+                        String.format(this.resourceBundle.getString("no.results.found.for.s"), dependencyString)
+                );
                 this.saveInstalledArtifactBtn.setEnabled(false);
             }
         }
@@ -573,7 +574,7 @@ public class SettingsView {
         this.saveInstalledArtifactBtn.setEnabled(notEmpty);
     }
 
-    class SearchResultsDataListener implements ListDataListener {
+    private class SearchResultsDataListener implements ListDataListener {
         @Override
         public void intervalAdded(ListDataEvent e) {
             SettingsView.this.toggleArtifactButtonState();
@@ -590,7 +591,7 @@ public class SettingsView {
         }
     }
 
-    class InstalledArtifactsDataListener implements ListDataListener {
+    private class InstalledArtifactsDataListener implements ListDataListener {
         @Override
         public void intervalAdded(ListDataEvent e) {
             SettingsView.this.toggleInstalledArtifactButtonState();
@@ -607,7 +608,7 @@ public class SettingsView {
         }
     }
 
-    class ImportsDataListener implements ListDataListener {
+    private class ImportsDataListener implements ListDataListener {
 
         @Override
         public void intervalAdded(ListDataEvent e) {

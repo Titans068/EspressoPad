@@ -36,6 +36,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.ResourceBundle;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
@@ -44,6 +45,7 @@ public class EspressoPadController {
     private final Logger logger = LoggerFactory.getLogger(EspressoPadController.class);
     private final DefaultCompletionProvider provider = new DefaultCompletionProvider();
     private final XmlUtils handler = new XmlUtils();
+    private final ResourceBundle resourceBundle = ResourceBundle.getBundle("messages", Locale.getDefault());
 
     public static JShell getShell() {
         return shell;
@@ -218,7 +220,7 @@ public class EspressoPadController {
             DefaultMutableTreeNode node = (DefaultMutableTreeNode) selPath.getLastPathComponent();
             fileTree.setSelectionPath(selPath);
             JPopupMenu contextMenu = new JPopupMenu();
-            JMenuItem refreshMenuItem = new JMenuItem("Refresh tree");
+            JMenuItem refreshMenuItem = new JMenuItem(this.resourceBundle.getString("refresh.tree"));
             refreshMenuItem.addActionListener(e -> fileTree.refreshTree());
             contextMenu.add(refreshMenuItem);
             if (node.isLeaf()) {
@@ -227,20 +229,20 @@ public class EspressoPadController {
                         String.valueOf(node)
                 ).toFile();
                 if (SwingUtilities.isRightMouseButton(event)) {
-                    JMenuItem renameMenuItem = new JMenuItem("Rename file");
+                    JMenuItem renameMenuItem = new JMenuItem(this.resourceBundle.getString("rename.file2"));
                     renameMenuItem.addActionListener(e -> this.renameFile(fileTree, file));
                     contextMenu.add(renameMenuItem);
-                    JMenuItem deleteMenuItem = new JMenuItem("Delete file");
+                    JMenuItem deleteMenuItem = new JMenuItem(this.resourceBundle.getString("delete.file2"));
                     deleteMenuItem.addActionListener(e -> this.deleteFile(fileTree, file));
                     contextMenu.add(deleteMenuItem);
-                    JMenuItem openFileLocationMenuItem = new JMenuItem("Open File Location");
-                    openFileLocationMenuItem.addActionListener(e -> openFileLocation(file));
+                    JMenuItem openFileLocationMenuItem = new JMenuItem(this.resourceBundle.getString("open.file.location"));
+                    openFileLocationMenuItem.addActionListener(e -> this.openFileLocation(file));
                     contextMenu.add(openFileLocationMenuItem);
                     contextMenu.show(fileTree, event.getX(), event.getY());
                 } else if (event.getClickCount() == 2) return file;
             } else if (SwingUtilities.isRightMouseButton(event)) {
-                JMenuItem openFileLocationMenuItem = new JMenuItem("Open File Location");
-                openFileLocationMenuItem.addActionListener(e -> openFileLocation(new File(String.valueOf(node))));
+                JMenuItem openFileLocationMenuItem = new JMenuItem(this.resourceBundle.getString("open.file.location"));
+                openFileLocationMenuItem.addActionListener(e -> this.openFileLocation(new File(String.valueOf(node))));
                 contextMenu.add(openFileLocationMenuItem);
                 contextMenu.show(fileTree, event.getX(), event.getY());
             }
@@ -251,8 +253,8 @@ public class EspressoPadController {
     private void renameFile(FileTree fileTree, File file) {
         Object newName = JOptionPane.showInputDialog(
                 JOptionPane.getFrameForComponent(fileTree),
-                String.format("Rename %s?", file.getName()),
-                "Rename file?",
+                String.format(this.resourceBundle.getString("rename.s"), file.getName()),
+                this.resourceBundle.getString("rename.file"),
                 JOptionPane.QUESTION_MESSAGE,
                 UIManager.getIcon("OptionPane.questionIcon"),
                 null,
@@ -268,8 +270,8 @@ public class EspressoPadController {
     private void deleteFile(FileTree fileTree, File file) {
         if (JOptionPane.showConfirmDialog(
                 JOptionPane.getFrameForComponent(fileTree),
-                String.format("Delete file %s?", file.getName()),
-                "Delete file?",
+                String.format(this.resourceBundle.getString("delete.file.s"), file.getName()),
+                this.resourceBundle.getString("delete.file"),
                 JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION) {
             file.delete();
             fileTree.refreshTree();
@@ -291,7 +293,7 @@ public class EspressoPadController {
         JEditorPane editorPane = viewModel.getResultView();
         JProgressBar progressBar = viewModel.getStatusBar().getProgressBar();
         progressBar.setIndeterminate(true);
-        viewModel.getStatusBar().setStatusLabel("Running");
+        viewModel.getStatusBar().setStatusLabel(this.resourceBundle.getString("running"));
         Executors.newSingleThreadExecutor().submit(new Runnable() {
             @Override
             public void run() {
@@ -301,7 +303,7 @@ public class EspressoPadController {
                      PrintStream out = new PrintStream(consoleOutputStream);
                      PrintStream errStream = new PrintStream(consoleErrorStream);
                      JShell shell = JShell.builder().out(out).err(errStream).in(consoleInputStream).build()) {
-                    addArtifactsAndImports(shell);
+                    EspressoPadController.this.addArtifactsAndImports(shell);
                     SourceCodeAnalysis.CompletionInfo completion = shell.sourceCodeAnalysis().analyzeCompletion(code);
                     List<SnippetEvent> l = shell.eval(EspressoPadController.this.handler.parseImportXml()
                             .stream()
@@ -323,17 +325,17 @@ public class EspressoPadController {
                                             .map(x -> String.format("\n\"%s\" -> %s\n", src,
                                                     x.getMessage(Locale.ENGLISH)))
                                             .collect(Collectors.toList());
-                                    EspressoPadController.this.logger.error("Code evaluation failed. Diagnostic info:\n{}", errors);
+                                    EspressoPadController.this.logger.error(EspressoPadController.this.resourceBundle.getString("code.evaluation.failed.diagnostic.info"), errors);
                                     errStream.println(errors);
                                     shell.stop();
                                     break eval;
                             }
                             //Runtime errors
                             if (snippet.exception() != null) {
-                                EspressoPadController.this.logger.error("Code evaluation failed at \"{}\"", src);
-                                errStream.printf("Code evaluation failed at \"%s\"\nDiagnostic info:\n", src);
+                                EspressoPadController.this.logger.error(EspressoPadController.this.resourceBundle.getString("code.evaluation.failed.at"), src);
+                                errStream.printf(EspressoPadController.this.resourceBundle.getString("code.evaluation.failed.at.s.diagnostic.info"), src);
                                 snippet.exception().printStackTrace(errStream);
-                                EspressoPadController.this.logger.error("EVALUATION ERROR", snippet.exception());
+                                EspressoPadController.this.logger.error(EspressoPadController.this.resourceBundle.getString("evaluation.error"), snippet.exception());
                                 shell.stop();
                                 try {
                                     throw snippet.exception();
@@ -351,7 +353,7 @@ public class EspressoPadController {
                 } finally {
                     progressBar.setValue(progressBar.getMinimum());
                     progressBar.setIndeterminate(false);
-                    viewModel.getStatusBar().setStatusLabel("Ready");
+                    viewModel.getStatusBar().setStatusLabel(EspressoPadController.this.resourceBundle.getString("ready"));
                 }
             }
         });
@@ -361,7 +363,7 @@ public class EspressoPadController {
         shell.close();
     }
 
-    class TextEditorListener implements DocumentListener {
+    private class TextEditorListener implements DocumentListener {
         private final TextEditor textEditor;
 
         TextEditorListener(TextEditor textEditor) {
@@ -380,7 +382,7 @@ public class EspressoPadController {
 
         @Override
         public void changedUpdate(DocumentEvent e) {
-            setupTextChangeEvent(this.textEditor);
+            EspressoPadController.this.setupTextChangeEvent(this.textEditor);
         }
     }
 }

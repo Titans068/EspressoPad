@@ -11,11 +11,11 @@ import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.io.File;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 public class FileTree extends JTree {
     private final DefaultTreeModel defaultTreeModel;
@@ -44,9 +44,9 @@ public class FileTree extends JTree {
         // should only be null at root
         if (curTop != null)
             curTop.add(curDir);
-        List<String> ol = Arrays.stream(Objects.requireNonNullElse(dir.list(), new String[0]))
+        String[] ol = Arrays.stream(Objects.requireNonNullElse(dir.list(), new String[0]))
                 .sorted(String.CASE_INSENSITIVE_ORDER)
-                .collect(Collectors.toList());
+                .toArray(String[]::new);
         File f;
         List<String> files = new ArrayList<>();
         // Make two passes, one for Dirs and one for Files. This is #1.
@@ -55,7 +55,7 @@ public class FileTree extends JTree {
             if (curPath.equals("."))
                 newPath = thisObject;
             else
-                newPath = curPath + File.separator + thisObject;
+                newPath = Path.of(curPath, thisObject).toString();
             if ((f = new File(newPath)).isDirectory())
                 this.addNodes(curDir, f);
             else
@@ -88,7 +88,7 @@ public class FileTree extends JTree {
         return new Dimension(200, 400);
     }
 
-    class FileTreeCellRenderer extends DefaultTreeCellRenderer {
+    private class FileTreeCellRenderer extends DefaultTreeCellRenderer {
 
         private final FileSystemView fileSystemView;
 
