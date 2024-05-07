@@ -41,6 +41,8 @@ public class EspressoPadView extends JPanel {
     private final JTabbedPane tabPane = new JTabbedPane();
     private final JToolBar toolBar = new JToolBar();
     private final JMenuBar menuBar = new JMenuBar();
+    private JButton runBtn;
+    private JMenuItem runMenuItem;
     private final List<ViewModel> viewModels = new ArrayList<>();
     private final TextEditorController editorController = new TextEditorController();
     private final XmlUtils handler = new XmlUtils();
@@ -184,10 +186,11 @@ public class EspressoPadView extends JPanel {
 
         this.toolBar.addSeparator();
 
-        JButton runBtn = new JButton(FontIcon.of(FontAwesomeSolid.PLAY, 15));
-        runBtn.setToolTipText(this.resourceBundle.getString("run"));
-        runBtn.addActionListener(event -> this.controller.run(this.getCurrentViewModel()));
-        this.toolBar.add(runBtn);
+        this.runBtn = new JButton(FontIcon.of(FontAwesomeSolid.PLAY, 15));
+        this.runBtn.setToolTipText(this.resourceBundle.getString("run"));
+        this.runBtn.addActionListener(event ->
+                this.controller.run(this.getCurrentViewModel(), new AbstractButton[]{this.runBtn, this.runMenuItem}));
+        this.toolBar.add(this.runBtn);
 
         this.toolBar.addSeparator();
 
@@ -329,9 +332,10 @@ public class EspressoPadView extends JPanel {
         editMenu.add(reformatSelectionItem);
 
         JMenu runMenu = new JMenu(this.resourceBundle.getString("run"));
-        JMenuItem runMenuItem = new JMenuItem(this.resourceBundle.getString("run"));
-        runMenuItem.addActionListener(event -> this.controller.run(this.getCurrentViewModel()));
-        runMenu.add(runMenuItem);
+        this.runMenuItem = new JMenuItem(this.resourceBundle.getString("run"));
+        this.runMenuItem.addActionListener(event ->
+                this.controller.run(this.getCurrentViewModel(), new AbstractButton[]{this.runMenuItem, this.runBtn}));
+        runMenu.add(this.runMenuItem);
 
         JMenu toolsMenu = new JMenu(this.resourceBundle.getString("tools"));
         JMenuItem settingsMenuItem = new JMenuItem(this.resourceBundle.getString("settings"));
@@ -451,7 +455,7 @@ public class EspressoPadView extends JPanel {
                 int selected = this.tabPane.getSelectedIndex();
                 FontIcon icon = (FontIcon) this.tabPane.getIconAt(selected);
                 if (icon != null && FontAwesomeSolid.PLUS.getCode() == icon.getIkon().getCode() &&
-                        selected == this.tabPane.getTabCount() - 1) {
+                    selected == this.tabPane.getTabCount() - 1) {
                     JPanel pane = this.createTab(false);
                     String tl = String.format(this.resourceBundle.getString("tab.d"), tabCounter.get());
                     this.tabPane.insertTab(tl, null, pane, null, this.tabPane.getTabCount() - 2);
@@ -517,7 +521,7 @@ public class EspressoPadView extends JPanel {
             @Override
             public void mouseClicked(MouseEvent e) {
                 if (EspressoPadView.this.tabPane.getBoundsAt(EspressoPadView.this.tabPane.getSelectedIndex()).contains(e.getPoint()) &&
-                        SwingUtilities.isMiddleMouseButton(e))
+                    SwingUtilities.isMiddleMouseButton(e))
                     EspressoPadView.this.removeCurrentTab();
             }
         });

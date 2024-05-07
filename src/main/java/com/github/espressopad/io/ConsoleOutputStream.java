@@ -6,7 +6,7 @@ import java.io.OutputStream;
 public class ConsoleOutputStream extends OutputStream {
     protected final JEditorPane document;
     protected StringBuilder element = new StringBuilder();
-    protected Character prev = null;
+    private Character prev = null;
 
     public ConsoleOutputStream(JEditorPane document) {
         this.document = document;
@@ -14,6 +14,11 @@ public class ConsoleOutputStream extends OutputStream {
 
     @Override
     public void write(int b) {
+        this.writeContent(b);
+        this.document.setText(this.element.toString());
+    }
+
+    protected void writeContent(int b) {
         char c = (char) b;
         switch (c) {
             case '\r':
@@ -41,6 +46,5 @@ public class ConsoleOutputStream extends OutputStream {
                 break;
         }
         this.prev = c;
-        this.document.setText(this.element.toString());
     }
 }

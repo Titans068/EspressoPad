@@ -288,7 +288,9 @@ public class EspressoPadController {
         }
     }
 
-    public void run(ViewModel viewModel) {
+    public void run(ViewModel viewModel, AbstractButton[] abstractButtons) {
+        for (AbstractButton abstractButton : abstractButtons)
+            abstractButton.setEnabled(false);
         String code = viewModel.getTextEditor().getText();
         JEditorPane editorPane = viewModel.getResultView();
         JProgressBar progressBar = viewModel.getStatusBar().getProgressBar();
@@ -354,6 +356,8 @@ public class EspressoPadController {
                     progressBar.setValue(progressBar.getMinimum());
                     progressBar.setIndeterminate(false);
                     viewModel.getStatusBar().setStatusLabel(EspressoPadController.this.resourceBundle.getString("ready"));
+                    for (AbstractButton abstractButton : abstractButtons)
+                        abstractButton.setEnabled(true);
                 }
             }
         });
