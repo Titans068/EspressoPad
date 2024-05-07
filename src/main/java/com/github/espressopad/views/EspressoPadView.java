@@ -96,15 +96,15 @@ public class EspressoPadView extends JPanel {
         });
         DefaultDockable fileTreeDockable = Utils.createDockable(
                 new JScrollPane(this.fileTree),
-                this.resourceBundle.getString("file.tree")
+                this.resourceBundle.getString("files")
         );
-        fileTreeDockable.setTitleIcon(FontIcon.of(FontAwesomeRegular.FILE_ALT, 15));
+        fileTreeDockable.setTitleIcon(FontIcon.of(FontAwesomeRegular.FILE, 15));
         frontend.addDockable("fileTree", fileTreeDockable);
         frontend.setHideable(fileTreeDockable, true);
         frontend.addFrontendListener(new FrontendAdapter(fileTreeDockable, frontend));
         splitDockStation.drop(fileTreeDockable, new SplitDockProperty(0, 0, .25, 1));
-        DefaultDockable tabPaneDockable = Utils.createDockable(this.tabPane, this.resourceBundle.getString("open.files"));
-        tabPaneDockable.setTitleIcon(FontIcon.of(FontAwesomeSolid.FILE_CODE, 11));
+        DefaultDockable tabPaneDockable = Utils.createDockable(this.tabPane, this.resourceBundle.getString("workspace"));
+        tabPaneDockable.setTitleIcon(FontIcon.of(FontAwesomeRegular.FILE, 11));
         frontend.addDockable("results", tabPaneDockable);
         frontend.setHideable(tabPaneDockable, false);
         splitDockStation.drop(tabPaneDockable, new SplitDockProperty(0.25, 0, .75, 1));
