@@ -4,18 +4,18 @@ import javax.swing.JEditorPane;
 import java.io.OutputStream;
 
 public class ConsoleOutputStream extends OutputStream {
-    protected final JEditorPane document;
+    protected final JEditorPane output;
     protected StringBuilder element = new StringBuilder();
     private Character prev = null;
 
-    public ConsoleOutputStream(JEditorPane document) {
-        this.document = document;
+    public ConsoleOutputStream(JEditorPane output) {
+        this.output = output;
     }
 
     @Override
     public void write(int b) {
         this.writeContent(b);
-        this.document.setText(this.element.toString());
+        this.output.setText(this.element.toString());
     }
 
     protected void writeContent(int b) {

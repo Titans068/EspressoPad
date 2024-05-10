@@ -292,15 +292,16 @@ public class EspressoPadController {
         for (AbstractButton abstractButton : abstractButtons)
             abstractButton.setEnabled(false);
         String code = viewModel.getTextEditor().getText();
-        JEditorPane editorPane = viewModel.getResultView();
+        JEditorPane resultView = viewModel.getResultView();
+        resultView.setText("");
         JProgressBar progressBar = viewModel.getStatusBar().getProgressBar();
         progressBar.setIndeterminate(true);
         viewModel.getStatusBar().setStatusLabel(this.resourceBundle.getString("running"));
         Executors.newSingleThreadExecutor().submit(new Runnable() {
             @Override
             public void run() {
-                try (ConsoleOutputStream consoleOutputStream = new ConsoleOutputStream(editorPane);
-                     ConsoleErrorStream consoleErrorStream = new ConsoleErrorStream(editorPane);
+                try (ConsoleOutputStream consoleOutputStream = new ConsoleOutputStream(resultView);
+                     ConsoleErrorStream consoleErrorStream = new ConsoleErrorStream(resultView);
                      ConsoleInputStream consoleInputStream = new ConsoleInputStream(viewModel.getStatusBar());
                      PrintStream out = new PrintStream(consoleOutputStream);
                      PrintStream errStream = new PrintStream(consoleErrorStream);

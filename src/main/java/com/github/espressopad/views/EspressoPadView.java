@@ -6,6 +6,8 @@ import bibliothek.gui.dock.DefaultDockable;
 import bibliothek.gui.dock.SplitDockStation;
 import bibliothek.gui.dock.event.DockFrontendAdapter;
 import bibliothek.gui.dock.station.split.SplitDockProperty;
+import bibliothek.gui.dock.util.Priority;
+import bibliothek.gui.dock.util.color.ColorManager;
 import com.github.espressopad.controller.EspressoPadController;
 import com.github.espressopad.controller.TextEditorController;
 import com.github.espressopad.models.SettingsModel;
@@ -81,6 +83,8 @@ public class EspressoPadView extends JPanel {
 
     private void setupDocking() {
         DockFrontend frontend = new DockFrontend(this.frame);
+        ColorManager colors = frontend.getController().getColors();
+        colors.put(Priority.CLIENT, "title.active.left", UIManager.getColor("controlDkShadow"));
         SplitDockStation splitDockStation = new SplitDockStation();
         frontend.addRoot("root", splitDockStation);
         this.fileTree = new FileTree(Utils.validateDefaultDirectory().toFile());
@@ -395,19 +399,21 @@ public class EspressoPadView extends JPanel {
         panel.setLayout(new BoxLayout(panel, BoxLayout.PAGE_AXIS));
         panel.add(new JScrollPane(model.getResultView()));
         panel.add(model.getStatusBar());
-        DockFrontend controller = new DockFrontend(this.frame);
+        DockFrontend frontend = new DockFrontend(this.frame);
+        ColorManager colors = frontend.getController().getColors();
+        colors.put(Priority.CLIENT, "title.active.left", UIManager.getColor("controlDkShadow"));
         SplitDockStation station = new SplitDockStation();
-        controller.addRoot("root", station);
+        frontend.addRoot("root", station);
         RTextScrollPane scrollPane = new RTextScrollPane(model.getTextEditor());
         model.getTextEditor().setScrollPane(scrollPane);
         DefaultDockable textDock = Utils.createDockable(scrollPane, title);
-        controller.addDockable("document", textDock);
-        controller.setHideable(textDock, false);
+        frontend.addDockable("document", textDock);
+        frontend.setHideable(textDock, false);
         station.drop(textDock, new SplitDockProperty(0, 0, 1, .6));
         DefaultDockable dockable = Utils.createDockable(panel, this.resourceBundle.getString("results"));
         dockable.setTitleIcon(FontIcon.of(FontAwesomeSolid.GLASSES, 11));
-        controller.addDockable("results", dockable);
-        controller.setHideable(dockable, false);
+        frontend.addDockable("results", dockable);
+        frontend.setHideable(dockable, false);
         station.drop(dockable, new SplitDockProperty(0, .75, 1, .4));
         model.getTab().add(station, BorderLayout.CENTER);
         model.getTextEditor().requestFocusInWindow();
@@ -455,7 +461,7 @@ public class EspressoPadView extends JPanel {
                 int selected = this.tabPane.getSelectedIndex();
                 FontIcon icon = (FontIcon) this.tabPane.getIconAt(selected);
                 if (icon != null && FontAwesomeSolid.PLUS.getCode() == icon.getIkon().getCode() &&
-                    selected == this.tabPane.getTabCount() - 1) {
+                        selected == this.tabPane.getTabCount() - 1) {
                     JPanel pane = this.createTab(false);
                     String tl = String.format(this.resourceBundle.getString("tab.d"), tabCounter.get());
                     this.tabPane.insertTab(tl, null, pane, null, this.tabPane.getTabCount() - 2);
@@ -521,7 +527,7 @@ public class EspressoPadView extends JPanel {
             @Override
             public void mouseClicked(MouseEvent e) {
                 if (EspressoPadView.this.tabPane.getBoundsAt(EspressoPadView.this.tabPane.getSelectedIndex()).contains(e.getPoint()) &&
-                    SwingUtilities.isMiddleMouseButton(e))
+                        SwingUtilities.isMiddleMouseButton(e))
                     EspressoPadView.this.removeCurrentTab();
             }
         });

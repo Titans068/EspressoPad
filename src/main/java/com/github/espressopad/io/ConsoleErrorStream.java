@@ -10,6 +10,6 @@ public class ConsoleErrorStream extends ConsoleOutputStream {
     @Override
     public void write(int b) {
         super.writeContent(b);
-        this.document.setText(String.format("<font color=\"B22222\">%s</font>", this.element.toString()));
+        this.output.setText(String.format("<font color=\"B22222\">%s</font>", this.element.toString()));
     }
 }
