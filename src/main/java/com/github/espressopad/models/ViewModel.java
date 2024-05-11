@@ -13,15 +13,17 @@ public class ViewModel {
     private JTextPane resultView;
     private StatusBar statusBar;
     private File backingFile = null;
+    private String title;
 
     public ViewModel() {
-        this(null, null, null, null);
+        this(null, null, null, null, null);
     }
 
-    private ViewModel(JPanel tab, TextEditor textEditor, JTextPane resultView, StatusBar statusBar) {
+    private ViewModel(JPanel tab, TextEditor textEditor, JTextPane resultView, StatusBar statusBar, String title) {
         this.setTextEditor(textEditor);
         this.setResultView(resultView);
         this.setStatusBar(statusBar);
+        this.setTitle(title);
         this.setTab(tab);
     }
 
@@ -73,5 +75,13 @@ public class ViewModel {
 
     public void setBackingFile(File backingFile) {
         this.backingFile = backingFile;
+    }
+
+    public String getTitle() {
+        return this.title;
+    }
+
+    public void setTitle(String title) {
+        this.title = title;
     }
 }

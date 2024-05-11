@@ -378,7 +378,8 @@ public class EspressoPadView extends JPanel {
             title = String.format(this.resourceBundle.getString("tab.d"), tabCounter.incrementAndGet());
         else title = this.resourceBundle.getString("tab1");
         ViewModel model = new ViewModel();
-        this.setupTab(model, title);
+        model.setTitle(title);
+        this.setupTab(model);
 
         JPanel tab = model.getTab();
         TextEditor textEditor = model.getTextEditor();
@@ -393,7 +394,7 @@ public class EspressoPadView extends JPanel {
         return tab;
     }
 
-    private void setupTab(ViewModel model, String title) {
+    private void setupTab(ViewModel model) {
         model.getTab().setLayout(new BorderLayout());
         JPanel panel = new JPanel();
         panel.setLayout(new BoxLayout(panel, BoxLayout.PAGE_AXIS));
@@ -406,7 +407,7 @@ public class EspressoPadView extends JPanel {
         frontend.addRoot("root", station);
         RTextScrollPane scrollPane = new RTextScrollPane(model.getTextEditor());
         model.getTextEditor().setScrollPane(scrollPane);
-        DefaultDockable textDock = Utils.createDockable(scrollPane, title);
+        DefaultDockable textDock = Utils.createDockable(scrollPane, model.getTitle());
         frontend.addDockable("document", textDock);
         frontend.setHideable(textDock, false);
         station.drop(textDock, new SplitDockProperty(0, 0, 1, .6));
@@ -431,16 +432,23 @@ public class EspressoPadView extends JPanel {
     private JPanel openFile(File file) {
         ViewModel model = new ViewModel();
         try {
-            String title = file.getName();
-            this.setupTab(model, title);
+            model.setBackingFile(file);
+            model.setTitle(file.getName());
+            for (ViewModel viewModel : this.viewModels) {
+                if (viewModel.getTitle().equals(model.getTitle()) &&
+                        !file.getPath().equals(viewModel.getBackingFile().getPath())) {
+                    model.setTitle(file.getPath());
+                    break;
+                }
+            }
+            this.setupTab(model);
             JPanel tab = model.getTab();
             TextEditor textEditor = model.getTextEditor();
             textEditor.setText(Files.readString(file.toPath()));
             this.setupTextEditorAppearance(textEditor);
-            model.setBackingFile(file);
-            this.tabPane.insertTab(title, null, tab, null, this.tabPane.getTabCount() - 1);
+            this.tabPane.insertTab(model.getTitle(), null, tab, null, this.tabPane.getTabCount() - 1);
             this.tabPane.setSelectedComponent(tab);
-            this.setupClosableTabs(title);
+            this.setupClosableTabs(model.getTitle());
             this.controller.setupTextChangeListener(textEditor);
             this.viewModels.add(model);
             return tab;
@@ -550,7 +558,7 @@ public class EspressoPadView extends JPanel {
         checker.clear();
         for (int i = 0; i < this.viewModels.size(); i++) {
             File backingFile = this.viewModels.get(i).getBackingFile();
-            if (backingFile != null && !checker.add(backingFile.getName()))
+            if (backingFile != null && !checker.add(backingFile.getPath()))
                 this.viewModels.remove(i);
         }
         this.tabPane.setSelectedIndex(this.tabPane.indexOfTab(selectedTitle));
