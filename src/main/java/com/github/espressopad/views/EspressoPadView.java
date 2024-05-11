@@ -479,9 +479,9 @@ public class EspressoPadView extends JPanel {
         File savedFile = this.editorController.saveFile(currentViewModel);
         if (savedFile != null) {
             this.openFile(savedFile);
-            this.tabPane.removeTabAt(this.viewModels.indexOf(this.getCurrentViewModel()) - 1);
+            this.tabPane.removeTabAt(this.viewModels.indexOf(currentViewModel));
             this.setupClosableTabs(savedFile.getName());
-            this.viewModels.remove(this.getCurrentViewModel());
+            this.viewModels.remove(currentViewModel);
         }
     }
 

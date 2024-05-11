@@ -23,6 +23,7 @@ public class StatusBar extends JPanel {
         this.add(this.statusLabel);
         this.add(Box.createHorizontalGlue());
         this.add(this.findOccurrencesLabel);
+        this.add(Box.createHorizontalGlue());
         this.add(this.characterPosition);
         this.add(Box.createHorizontalGlue());
         this.add(this.progressBar);

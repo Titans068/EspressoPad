@@ -299,8 +299,8 @@ public class EspressoPadController {
         JProgressBar progressBar = viewModel.getStatusBar().getProgressBar();
         progressBar.setIndeterminate(true);
         viewModel.getStatusBar().setStatusLabel(this.resourceBundle.getString("running"));
-        MessageConsole stderrConsole = new MessageConsole(resultView, true);
-        MessageConsole stdoutConsole = new MessageConsole(resultView, true);
+        MessageConsole stderrConsole = new MessageConsole(resultView);
+        MessageConsole stdoutConsole = new MessageConsole(resultView);
 
         Executors.newSingleThreadExecutor().submit(new Runnable() {
             @Override
@@ -308,8 +308,8 @@ public class EspressoPadController {
                 try (ConsoleOutputStream consoleOutputStream = stdoutConsole.redirectOut(Color.black, null);
                      ConsoleOutputStream consoleErrorStream = stderrConsole.redirectErr(new Color(0xB22222), null);
                      ConsoleInputStream consoleInputStream = new ConsoleInputStream(viewModel.getStatusBar());
-                     PrintStream out = new PrintStream(consoleOutputStream);
-                     PrintStream errStream = new PrintStream(consoleErrorStream);
+                     PrintStream out = new PrintStream(consoleOutputStream, true);
+                     PrintStream errStream = new PrintStream(consoleErrorStream, true);
                      JShell shell = JShell.builder().out(out).err(errStream).in(consoleInputStream).build()) {
 
                     EspressoPadController.this.addArtifactsAndImports(shell);

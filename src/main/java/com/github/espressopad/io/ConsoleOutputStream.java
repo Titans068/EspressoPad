@@ -16,7 +16,7 @@ import java.io.PrintStream;
  *  the output source.
  */
 public class ConsoleOutputStream extends ByteArrayOutputStream {
-    private final String EOL = System.getProperty("line.separator");
+    private final String EOL = System.lineSeparator();
     private SimpleAttributeSet attributes;
     private final PrintStream printStream;
     private final StringBuffer buffer = new StringBuffer(80);
