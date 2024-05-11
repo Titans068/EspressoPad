@@ -38,6 +38,7 @@ public class AboutView {
         this.setupTable();
 
         this.buttonOK.addActionListener(new ActionListener() {
+            @Override
             public void actionPerformed(ActionEvent e) {
                 AboutView.this.onOK();
             }

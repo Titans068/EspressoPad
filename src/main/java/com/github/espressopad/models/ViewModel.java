@@ -3,14 +3,14 @@ package com.github.espressopad.models;
 import com.github.espressopad.views.components.StatusBar;
 import com.github.espressopad.views.components.TextEditor;
 
-import javax.swing.JEditorPane;
+import javax.swing.JTextPane;
 import javax.swing.JPanel;
 import java.io.File;
 
 public class ViewModel {
     private JPanel tab;
     private TextEditor textEditor;
-    private JEditorPane resultView;
+    private JTextPane resultView;
     private StatusBar statusBar;
     private File backingFile = null;
 
@@ -18,7 +18,7 @@ public class ViewModel {
         this(null, null, null, null);
     }
 
-    private ViewModel(JPanel tab, TextEditor textEditor, JEditorPane resultView, StatusBar statusBar) {
+    private ViewModel(JPanel tab, TextEditor textEditor, JTextPane resultView, StatusBar statusBar) {
         this.setTextEditor(textEditor);
         this.setResultView(resultView);
         this.setStatusBar(statusBar);
@@ -45,13 +45,13 @@ public class ViewModel {
         this.textEditor = textEditor;
     }
 
-    public JEditorPane getResultView() {
+    public JTextPane getResultView() {
         return this.resultView;
     }
 
-    public void setResultView(JEditorPane resultView) {
+    public void setResultView(JTextPane resultView) {
         if (resultView == null)
-            resultView = new JEditorPane();
+            resultView = new JTextPane();
         this.resultView = resultView;
         this.resultView.setEditable(false);
         this.resultView.setContentType("text/html");

@@ -25,7 +25,8 @@ public class ConsoleInputStream extends InputStream {
                             JOptionPane.getFrameForComponent(this.statusBar),
                             this.resourceBundle.getString("enter.input"),
                             this.resourceBundle.getString("awaiting.input"),
-                            JOptionPane.QUESTION_MESSAGE)
+                            JOptionPane.QUESTION_MESSAGE
+                    )
             );
             this.buffer.append("\n");
         }

@@ -1,11 +1,11 @@
 package com.github.espressopad.controller;
 
-import com.github.espressopad.io.ConsoleErrorStream;
 import com.github.espressopad.io.ConsoleInputStream;
 import com.github.espressopad.io.ConsoleOutputStream;
 import com.github.espressopad.models.ViewModel;
 import com.github.espressopad.utils.XmlUtils;
 import com.github.espressopad.views.components.FileTree;
+import com.github.espressopad.views.components.MessageConsole;
 import com.github.espressopad.views.components.TextEditor;
 import com.github.javaparser.StaticJavaParser;
 import com.github.javaparser.ast.body.BodyDeclaration;
@@ -27,6 +27,7 @@ import javax.swing.event.DocumentListener;
 import javax.swing.text.BadLocationException;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.TreePath;
+import java.awt.Color;
 import java.awt.Desktop;
 import java.awt.event.MouseEvent;
 import java.io.File;
@@ -292,27 +293,32 @@ public class EspressoPadController {
         for (AbstractButton abstractButton : abstractButtons)
             abstractButton.setEnabled(false);
         String code = viewModel.getTextEditor().getText();
-        JEditorPane resultView = viewModel.getResultView();
+        JTextPane resultView = viewModel.getResultView();
         resultView.setText("");
+
         JProgressBar progressBar = viewModel.getStatusBar().getProgressBar();
         progressBar.setIndeterminate(true);
         viewModel.getStatusBar().setStatusLabel(this.resourceBundle.getString("running"));
+        MessageConsole stderrConsole = new MessageConsole(resultView, true);
+        MessageConsole stdoutConsole = new MessageConsole(resultView, true);
+
         Executors.newSingleThreadExecutor().submit(new Runnable() {
             @Override
             public void run() {
-                try (ConsoleOutputStream consoleOutputStream = new ConsoleOutputStream(resultView);
-                     ConsoleErrorStream consoleErrorStream = new ConsoleErrorStream(resultView);
+                try (ConsoleOutputStream consoleOutputStream = stdoutConsole.redirectOut(Color.black, null);
+                     ConsoleOutputStream consoleErrorStream = stderrConsole.redirectErr(new Color(0xB22222), null);
                      ConsoleInputStream consoleInputStream = new ConsoleInputStream(viewModel.getStatusBar());
                      PrintStream out = new PrintStream(consoleOutputStream);
                      PrintStream errStream = new PrintStream(consoleErrorStream);
                      JShell shell = JShell.builder().out(out).err(errStream).in(consoleInputStream).build()) {
+
                     EspressoPadController.this.addArtifactsAndImports(shell);
                     SourceCodeAnalysis.CompletionInfo completion = shell.sourceCodeAnalysis().analyzeCompletion(code);
                     List<SnippetEvent> l = shell.eval(EspressoPadController.this.handler.parseImportXml()
                             .stream()
                             .map(imports -> String.format("import %s;", imports))
                             .collect(Collectors.joining()));
-                    eval:
+
                     while (!completion.source().isBlank()) {
                         List<SnippetEvent> snippets = shell.eval(completion.source());
 
@@ -328,18 +334,30 @@ public class EspressoPadController {
                                             .map(x -> String.format("\n\"%s\" -> %s\n", src,
                                                     x.getMessage(Locale.ENGLISH)))
                                             .collect(Collectors.toList());
-                                    EspressoPadController.this.logger.error(EspressoPadController.this.resourceBundle.getString("code.evaluation.failed.diagnostic.info"), errors);
+                                    EspressoPadController.this.logger.error(
+                                            EspressoPadController.this.resourceBundle.getString(
+                                                    "code.evaluation.failed.diagnostic.info"
+                                            ), errors
+                                    );
                                     errStream.println(errors);
-                                    shell.stop();
-                                    break eval;
                             }
                             //Runtime errors
                             if (snippet.exception() != null) {
-                                EspressoPadController.this.logger.error(EspressoPadController.this.resourceBundle.getString("code.evaluation.failed.at"), src);
-                                errStream.printf(EspressoPadController.this.resourceBundle.getString("code.evaluation.failed.at.s.diagnostic.info"), src);
+                                EspressoPadController.this.logger.error(
+                                        EspressoPadController.this.resourceBundle.getString("code.evaluation.failed.at"),
+                                        src
+                                );
+                                errStream.printf(
+                                        EspressoPadController.this.resourceBundle.getString(
+                                                "code.evaluation.failed.at.s.diagnostic.info"
+                                        ),
+                                        src
+                                );
                                 snippet.exception().printStackTrace(errStream);
-                                EspressoPadController.this.logger.error(EspressoPadController.this.resourceBundle.getString("evaluation.error"), snippet.exception());
-                                shell.stop();
+                                EspressoPadController.this.logger.error(
+                                        EspressoPadController.this.resourceBundle.getString("evaluation.error"),
+                                        snippet.exception()
+                                );
                                 try {
                                     throw snippet.exception();
                                 } catch (JShellException e) {
