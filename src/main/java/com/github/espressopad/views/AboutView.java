@@ -223,7 +223,8 @@ public class AboutView {
         gbc.insets = new Insets(0, 10, 0, 0);
         panel4.add(label10, gbc);
         JLabel label11 = new JLabel();
-        label11.setText(String.format("©%d", Year.now().getValue()));
+        label11.setText(String.format("<html><p>%s</p><p>© %d</p><html>",
+                        this.resourceBundle.getString("espresso.version"), Year.now().getValue()));
         gbc = new GridBagConstraints();
         gbc.gridx = 0;
         gbc.gridy = 1;
