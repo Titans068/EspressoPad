@@ -87,7 +87,7 @@ public class EspressoPadView extends JPanel {
         colors.put(Priority.CLIENT, "title.active.left", UIManager.getColor("controlDkShadow"));
         SplitDockStation splitDockStation = new SplitDockStation();
         frontend.addRoot("root", splitDockStation);
-        this.fileTree = new FileTree(Utils.validateDefaultDirectory().toFile());
+        this.fileTree = new FileTree(Utils.validateDefaultDirectory());
         this.fileTree.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
@@ -422,6 +422,7 @@ public class EspressoPadView extends JPanel {
 
     private void openFile() {
         JFileChooser chooser = new JFileChooser();
+        chooser.setCurrentDirectory(Utils.validateDefaultDirectory());
         chooser.setFileFilter(new FileNameExtensionFilter(this.resourceBundle.getString("jsh.file"), "jsh"));
         if (chooser.showOpenDialog(this.frame) == JFileChooser.APPROVE_OPTION) {
             this.openFile(chooser.getSelectedFile());
@@ -490,6 +491,7 @@ public class EspressoPadView extends JPanel {
             this.tabPane.removeTabAt(this.viewModels.indexOf(currentViewModel));
             this.setupClosableTabs(savedFile.getName());
             this.viewModels.remove(currentViewModel);
+            this.fileTree.refreshTree();
         }
     }
 
@@ -498,6 +500,7 @@ public class EspressoPadView extends JPanel {
         File savedFile = this.editorController.saveFileAs(currentViewModel);
         if (savedFile != null) {
             this.openFile(savedFile);
+            this.fileTree.refreshTree();
         }
     }
 
