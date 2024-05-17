@@ -27,6 +27,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Locale;
 import java.util.ResourceBundle;
+import java.util.regex.Pattern;
 
 public class TextEditorController {
     private FindDialog findDialog;
@@ -60,20 +61,20 @@ public class TextEditorController {
         textEditor.selectAll();
     }
 
-    public void findAction(TextEditor textEditor, StatusBar statusBar) {
+    public void findAction(ViewModel viewModel) {
         if (this.replaceDialog != null && this.replaceDialog.isVisible())
             this.replaceDialog.setVisible(false);
 
-        Frame frame = JOptionPane.getFrameForComponent(textEditor);
-        this.findDialog = new FindDialog(frame, new TextEditorSearchListener(textEditor, statusBar));
+        Frame frame = JOptionPane.getFrameForComponent(viewModel.getTextEditor());
+        this.findDialog = new FindDialog(frame, new TextEditorSearchListener(viewModel.getTextEditor(), viewModel.getStatusBar()));
         this.findDialog.setVisible(true);
     }
 
-    public void replaceAction(TextEditor textEditor, StatusBar statusBar) {
+    public void replaceAction(ViewModel viewModel) {
         if (this.findDialog != null && this.findDialog.isVisible())
             this.findDialog.setVisible(false);
-        Frame frame = JOptionPane.getFrameForComponent(textEditor);
-        this.replaceDialog = new ReplaceDialog(frame, new TextEditorSearchListener(textEditor, statusBar));
+        Frame frame = JOptionPane.getFrameForComponent(viewModel.getTextEditor());
+        this.replaceDialog = new ReplaceDialog(frame, new TextEditorSearchListener(viewModel.getTextEditor(), viewModel.getStatusBar()));
         this.replaceDialog.setVisible(true);
     }
 
@@ -123,10 +124,10 @@ public class TextEditorController {
             if (textEditor.getSelectedText() == null) {
                 int currentLineStart = textEditor.getLineStartOffsetOfCurrentLine();
                 int currentLineEnd = textEditor.getLineEndOffsetOfCurrentLine();
-                textEditor.insert(
-                        textEditor.getText(currentLineStart, currentLineEnd - currentLineStart),
-                        currentLineEnd
-                );
+                String currentText = textEditor.getText(currentLineStart, currentLineEnd - currentLineStart);
+                if (Pattern.compile("^(.*)$", Pattern.MULTILINE).split(currentText).length == 0)
+                    currentText = "\n" + currentText;
+                textEditor.insert(currentText, currentLineEnd);
             } else textEditor.insert(String.format("\n%s", textEditor.getSelectedText()), textEditor.getSelectionEnd());
         } catch (BadLocationException e) {
             throw new RuntimeException(e);

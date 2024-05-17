@@ -182,10 +182,7 @@ public class EspressoPadView extends JPanel {
 
         JButton findBtn = new JButton(FontIcon.of(FontAwesomeSolid.SEARCH, 15));
         findBtn.setToolTipText(this.resourceBundle.getString("find"));
-        findBtn.addActionListener(event ->
-                this.editorController.findAction(
-                        this.getCurrentTextEditor(), this.getCurrentViewModel().getStatusBar())
-        );
+        findBtn.addActionListener(event -> this.editorController.findAction(this.getCurrentView()));
         this.toolBar.add(findBtn);
 
         this.toolBar.addSeparator();
@@ -193,7 +190,7 @@ public class EspressoPadView extends JPanel {
         this.runBtn = new JButton(FontIcon.of(FontAwesomeSolid.PLAY, 15));
         this.runBtn.setToolTipText(this.resourceBundle.getString("run"));
         this.runBtn.addActionListener(event ->
-                this.controller.run(this.getCurrentViewModel(), new AbstractButton[]{this.runBtn, this.runMenuItem}));
+                this.controller.run(this.getCurrentView(), new AbstractButton[]{this.runBtn, this.runMenuItem}));
         this.toolBar.add(this.runBtn);
 
         this.toolBar.addSeparator();
@@ -286,23 +283,13 @@ public class EspressoPadView extends JPanel {
         JMenuItem findItem = new JMenuItem(this.resourceBundle.getString("find"));
         findItem.setMnemonic('f');
         findItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_F, ctrlDownMask));
-        findItem.addActionListener(event ->
-                this.editorController.findAction(
-                        this.getCurrentTextEditor(),
-                        this.getCurrentViewModel().getStatusBar()
-                )
-        );
+        findItem.addActionListener(event -> this.editorController.findAction(this.getCurrentView()));
         editMenu.add(findItem);
 
         JMenuItem replaceItem = new JMenuItem(this.resourceBundle.getString("replace"));
         replaceItem.setMnemonic('e');
         replaceItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_R, ctrlDownMask));
-        replaceItem.addActionListener(event ->
-                this.editorController.replaceAction(
-                        this.getCurrentTextEditor(),
-                        this.getCurrentViewModel().getStatusBar()
-                )
-        );
+        replaceItem.addActionListener(event -> this.editorController.replaceAction(this.getCurrentView()));
         editMenu.add(replaceItem);
 
         editMenu.add(new JSeparator());
@@ -338,7 +325,7 @@ public class EspressoPadView extends JPanel {
         JMenu runMenu = new JMenu(this.resourceBundle.getString("run"));
         this.runMenuItem = new JMenuItem(this.resourceBundle.getString("run"));
         this.runMenuItem.addActionListener(event ->
-                this.controller.run(this.getCurrentViewModel(), new AbstractButton[]{this.runMenuItem, this.runBtn}));
+                this.controller.run(this.getCurrentView(), new AbstractButton[]{this.runMenuItem, this.runBtn}));
         runMenu.add(this.runMenuItem);
 
         JMenu toolsMenu = new JMenu(this.resourceBundle.getString("tools"));
@@ -364,12 +351,12 @@ public class EspressoPadView extends JPanel {
         this.frame.setJMenuBar(this.menuBar);
     }
 
-    private ViewModel getCurrentViewModel() {
+    private ViewModel getCurrentView() {
         return this.viewModels.get(this.tabPane.getSelectedIndex());
     }
 
     private TextEditor getCurrentTextEditor() {
-        return this.getCurrentViewModel().getTextEditor();
+        return this.getCurrentView().getTextEditor();
     }
 
     private JPanel createTab(boolean prepend) {
@@ -484,7 +471,7 @@ public class EspressoPadView extends JPanel {
     }
 
     private void saveFile() {
-        ViewModel currentViewModel = this.getCurrentViewModel();
+        ViewModel currentViewModel = this.getCurrentView();
         File savedFile = this.editorController.saveFile(currentViewModel);
         if (savedFile != null) {
             this.openFile(savedFile);
@@ -496,7 +483,7 @@ public class EspressoPadView extends JPanel {
     }
 
     private void saveFileAs() {
-        ViewModel currentViewModel = this.getCurrentViewModel();
+        ViewModel currentViewModel = this.getCurrentView();
         File savedFile = this.editorController.saveFileAs(currentViewModel);
         if (savedFile != null) {
             this.openFile(savedFile);
@@ -516,7 +503,7 @@ public class EspressoPadView extends JPanel {
         btnClose.setBorder(border);
         btnClose.setContentAreaFilled(false);
         btnClose.setFocusable(false);
-        btnClose.addActionListener(e -> this.removeCurrentTab());
+        btnClose.addActionListener(e -> this.removeTabByTitle(title));
 
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.gridx = 0;
@@ -537,9 +524,20 @@ public class EspressoPadView extends JPanel {
         this.tabPane.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
-                if (EspressoPadView.this.tabPane.getBoundsAt(EspressoPadView.this.tabPane.getSelectedIndex()).contains(e.getPoint()) &&
-                        SwingUtilities.isMiddleMouseButton(e))
-                    EspressoPadView.this.removeCurrentTab();
+                if (tabPane.getBoundsAt(tabPane.getSelectedIndex()).contains(e.getPoint()) && tabPane.getTabCount() > 2
+                        && SwingUtilities.isMiddleMouseButton(e)) {
+                    int index = tabPane.indexAtLocation(e.getX(), e.getY());
+                    if (index != -1) {
+                        String title = tabPane.getTitleAt(index);
+                        tabPane.removeTabAt(index);
+                        tabPane.setSelectedComponent(tabPane.getComponentAt(tabPane.getTabCount() - 2));
+                        for (Iterator<ViewModel> iterator = viewModels.iterator(); iterator.hasNext(); ) {
+                            ViewModel viewModel = iterator.next();
+                            if (viewModel.getTitle().equals(title))
+                                iterator.remove();
+                        }
+                    }
+                }
             }
         });
     }
@@ -551,6 +549,18 @@ public class EspressoPadView extends JPanel {
         this.tabPane.setSelectedComponent(this.tabPane.getComponentAt(this.tabPane.getTabCount() - 2));
     }
 
+    private void removeTabByTitle(String title) {
+        if (this.tabPane.getTabCount() <= 2) return;
+        for (Iterator<ViewModel> iterator = this.viewModels.iterator(); iterator.hasNext(); ) {
+            ViewModel viewModel = iterator.next();
+            if (viewModel.getTitle().equals(title)) {
+                iterator.remove();
+                this.tabPane.remove(viewModel.getTab());
+            }
+        }
+        this.tabPane.setSelectedComponent(this.tabPane.getComponentAt(this.tabPane.getTabCount() - 2));
+    }
+
     private void closeAllDuplicateTabs() {
         String selectedTitle = this.tabPane.getTitleAt(this.tabPane.getSelectedIndex());
         Set<String> checker = new HashSet<>();
@@ -559,10 +569,11 @@ public class EspressoPadView extends JPanel {
                 this.tabPane.removeTabAt(i);
         }
         checker.clear();
-        for (int i = 0; i < this.viewModels.size(); i++) {
-            File backingFile = this.viewModels.get(i).getBackingFile();
+        for (Iterator<ViewModel> iterator = this.viewModels.iterator(); iterator.hasNext(); ) {
+            ViewModel viewModel = iterator.next();
+            File backingFile = viewModel.getBackingFile();
             if (backingFile != null && !checker.add(backingFile.getPath()))
-                this.viewModels.remove(i);
+                iterator.remove();
         }
         this.tabPane.setSelectedIndex(this.tabPane.indexOfTab(selectedTitle));
     }
