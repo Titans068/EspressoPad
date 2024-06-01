@@ -50,7 +50,7 @@ public class EspressoPadView extends JPanel {
     private final XmlUtils handler = new XmlUtils();
     private final JFrame frame;
     private boolean ignore = false;
-    private final SettingsModel settings;
+    private SettingsModel settings;
     private final ResourceBundle resourceBundle = ResourceBundle.getBundle("messages", Locale.getDefault());
     private FileTree fileTree;
 
@@ -118,6 +118,7 @@ public class EspressoPadView extends JPanel {
 
     private void setupTextEditorAppearance(TextEditor textEditor) {
         try {
+            this.settings = this.handler.parseSettingsXml();
             if (this.settings == null) return;
             String themeLocation = this.settings.getTheme();
             String font = this.settings.getFont();
@@ -330,11 +331,13 @@ public class EspressoPadView extends JPanel {
 
         JMenu toolsMenu = new JMenu(this.resourceBundle.getString("tools"));
         JMenuItem settingsMenuItem = new JMenuItem(this.resourceBundle.getString("settings"));
-        settingsMenuItem.addActionListener(event ->
-                new SettingsView(
-                        this.viewModels.stream().map(ViewModel::getTextEditor).collect(Collectors.toList()),
-                        this.settings
-                ).show()
+        settingsMenuItem.addActionListener(event -> {
+                    this.settings = this.handler.parseSettingsXml();
+                    new SettingsView(
+                            this.viewModels.stream().map(ViewModel::getTextEditor).collect(Collectors.toList()),
+                            this.settings
+                    ).show();
+                }
         );
         toolsMenu.add(settingsMenuItem);
 
@@ -619,8 +622,13 @@ public class EspressoPadView extends JPanel {
 
     private void exit() {
         if (this.checkUnsaved()) {
-            this.controller.close();
-            System.exit(0);
+            boolean confirmExit = JOptionPane.showConfirmDialog(this.frame,
+                    "Are you sure you want to exit this application?", "Exit?",
+                    JOptionPane.YES_NO_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE) == JOptionPane.YES_OPTION;
+            if (confirmExit) {
+                this.controller.close();
+                System.exit(0);
+            }
         }
     }
 
