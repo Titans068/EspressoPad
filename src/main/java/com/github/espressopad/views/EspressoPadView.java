@@ -619,8 +619,13 @@ public class EspressoPadView extends JPanel {
 
     private void exit() {
         if (this.checkUnsaved()) {
-            this.controller.close();
-            System.exit(0);
+            boolean confirmExit = JOptionPane.showConfirmDialog(this.frame,
+                    "Are you sure you want to exit this application?", "Exit?",
+                    JOptionPane.YES_NO_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE) == JOptionPane.YES_OPTION;
+            if (confirmExit) {
+                this.controller.close();
+                System.exit(0);
+            }
         }
     }
 
