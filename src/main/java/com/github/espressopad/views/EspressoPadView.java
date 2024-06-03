@@ -50,7 +50,7 @@ public class EspressoPadView extends JPanel {
     private final XmlUtils handler = new XmlUtils();
     private final JFrame frame;
     private boolean ignore = false;
-    private final SettingsModel settings;
+    private SettingsModel settings;
     private final ResourceBundle resourceBundle = ResourceBundle.getBundle("messages", Locale.getDefault());
     private FileTree fileTree;
 
@@ -118,6 +118,7 @@ public class EspressoPadView extends JPanel {
 
     private void setupTextEditorAppearance(TextEditor textEditor) {
         try {
+            this.settings = this.handler.parseSettingsXml();
             if (this.settings == null) return;
             String themeLocation = this.settings.getTheme();
             String font = this.settings.getFont();
@@ -330,11 +331,13 @@ public class EspressoPadView extends JPanel {
 
         JMenu toolsMenu = new JMenu(this.resourceBundle.getString("tools"));
         JMenuItem settingsMenuItem = new JMenuItem(this.resourceBundle.getString("settings"));
-        settingsMenuItem.addActionListener(event ->
-                new SettingsView(
-                        this.viewModels.stream().map(ViewModel::getTextEditor).collect(Collectors.toList()),
-                        this.settings
-                ).show()
+        settingsMenuItem.addActionListener(event -> {
+                    this.settings = this.handler.parseSettingsXml();
+                    new SettingsView(
+                            this.viewModels.stream().map(ViewModel::getTextEditor).collect(Collectors.toList()),
+                            this.settings
+                    ).show();
+                }
         );
         toolsMenu.add(settingsMenuItem);
 
