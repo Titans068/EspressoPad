@@ -53,6 +53,7 @@ public class EspressoPadView extends JPanel {
     private SettingsModel settings;
     private final ResourceBundle resourceBundle = ResourceBundle.getBundle("messages", Locale.getDefault());
     private FileTree fileTree;
+    private final Color activeTabColor = new Color(0x7A8A99);
 
     public EspressoPadView(JFrame frame) {
         this.frame = frame;
@@ -84,7 +85,8 @@ public class EspressoPadView extends JPanel {
     private void setupDocking() {
         DockFrontend frontend = new DockFrontend(this.frame);
         ColorManager colors = frontend.getController().getColors();
-        colors.put(Priority.CLIENT, "title.active.left", UIManager.getColor("controlDkShadow"));
+        colors.put(Priority.CLIENT, "title.active.left", this.activeTabColor);
+        colors.put(Priority.CLIENT, "title.active.right", this.activeTabColor);
         SplitDockStation splitDockStation = new SplitDockStation();
         frontend.addRoot("root", splitDockStation);
         this.fileTree = new FileTree(Utils.validateDefaultDirectory());
@@ -392,7 +394,8 @@ public class EspressoPadView extends JPanel {
         panel.add(model.getStatusBar());
         DockFrontend frontend = new DockFrontend(this.frame);
         ColorManager colors = frontend.getController().getColors();
-        colors.put(Priority.CLIENT, "title.active.left", UIManager.getColor("controlDkShadow"));
+        colors.put(Priority.CLIENT, "title.active.left", this.activeTabColor);
+        colors.put(Priority.CLIENT, "title.active.right", this.activeTabColor);
         SplitDockStation station = new SplitDockStation();
         frontend.addRoot("root", station);
         RTextScrollPane scrollPane = new RTextScrollPane(model.getTextEditor());
@@ -622,13 +625,8 @@ public class EspressoPadView extends JPanel {
 
     private void exit() {
         if (this.checkUnsaved()) {
-            boolean confirmExit = JOptionPane.showConfirmDialog(this.frame,
-                    "Are you sure you want to exit this application?", "Exit?",
-                    JOptionPane.YES_NO_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE) == JOptionPane.YES_OPTION;
-            if (confirmExit) {
-                this.controller.close();
-                System.exit(0);
-            }
+            this.controller.close();
+            System.exit(0);
         }
     }
 
