@@ -1,6 +1,6 @@
 package com.github.espressopad.views;
 
-import com.github.espressopad.utils.Utils;
+import com.github.espressopad.utils.Utilities;
 import com.github.espressopad.views.components.HyperlinkLabel;
 import com.github.espressopad.views.components.MultiLineCellRenderer;
 import org.kordamp.ikonli.fontawesome5.FontAwesomeBrands;
@@ -213,7 +213,7 @@ public class AboutView {
         panel4.setLayout(new GridBagLayout());
         this.contentPane.add(panel4, BorderLayout.NORTH);
         JLabel label10 = new JLabel();
-        Font label10Font = Utils.deriveFont(null, Font.BOLD, 26, label10.getFont());
+        Font label10Font = Utilities.deriveFont(null, Font.BOLD, 26, label10.getFont());
         if (label10Font != null) label10.setFont(label10Font);
         label10.setText(this.resourceBundle.getString("espresso.pad"));
         gbc = new GridBagConstraints();

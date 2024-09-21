@@ -4,7 +4,7 @@ import com.github.abrarsyed.jastyle.ASFormatter;
 import com.github.abrarsyed.jastyle.constants.EnumFormatStyle;
 import com.github.abrarsyed.jastyle.constants.SourceMode;
 import com.github.espressopad.models.ViewModel;
-import com.github.espressopad.utils.Utils;
+import com.github.espressopad.utils.Utilities;
 import com.github.espressopad.views.components.StatusBar;
 import com.github.espressopad.views.components.TextEditor;
 import org.fife.rsta.ui.search.FindDialog;
@@ -163,7 +163,7 @@ public class TextEditorController {
     }
 
     /**
-     * Never call this method
+     * NOTE: Never call this method
      */
     public File saveFile(ViewModel viewModel) {
         try {
@@ -180,12 +180,12 @@ public class TextEditorController {
     }
 
     /**
-     * Never call this method
+     * NOTE: Never call this method
      */
     public File saveFileAs(ViewModel viewModel) {
         try {
             JFileChooser chooser = new JFileChooser();
-            chooser.setCurrentDirectory(Utils.validateDefaultDirectory());
+            chooser.setCurrentDirectory(Utilities.validateDefaultDirectory());
             chooser.setFileFilter(new FileNameExtensionFilter(this.resourceBundle.getString("jsh.file"), "jsh"));
             if (chooser.showSaveDialog(viewModel.getTab()) == JFileChooser.APPROVE_OPTION) {
                 File selectedFile = chooser.getSelectedFile();

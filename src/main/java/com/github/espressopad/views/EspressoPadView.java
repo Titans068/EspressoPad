@@ -12,7 +12,7 @@ import com.github.espressopad.controller.EspressoPadController;
 import com.github.espressopad.controller.TextEditorController;
 import com.github.espressopad.models.SettingsModel;
 import com.github.espressopad.models.ViewModel;
-import com.github.espressopad.utils.Utils;
+import com.github.espressopad.utils.Utilities;
 import com.github.espressopad.utils.XmlUtils;
 import com.github.espressopad.views.components.FileTree;
 import com.github.espressopad.views.components.TextEditor;
@@ -26,6 +26,9 @@ import javax.swing.*;
 import javax.swing.border.CompoundBorder;
 import javax.swing.event.ChangeEvent;
 import javax.swing.filechooser.FileNameExtensionFilter;
+import javax.swing.text.BadLocationException;
+import javax.swing.text.Document;
+import javax.swing.text.SimpleAttributeSet;
 import java.awt.*;
 import java.awt.event.*;
 import java.io.File;
@@ -89,7 +92,7 @@ public class EspressoPadView extends JPanel {
         colors.put(Priority.CLIENT, "title.active.right", this.activeTabColor);
         SplitDockStation splitDockStation = new SplitDockStation();
         frontend.addRoot("root", splitDockStation);
-        this.fileTree = new FileTree(Utils.validateDefaultDirectory());
+        this.fileTree = new FileTree(Utilities.validateDefaultDirectory());
         this.fileTree.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
@@ -100,7 +103,7 @@ public class EspressoPadView extends JPanel {
                 }
             }
         });
-        DefaultDockable fileTreeDockable = Utils.createDockable(
+        DefaultDockable fileTreeDockable = Utilities.createDockable(
                 new JScrollPane(this.fileTree),
                 this.resourceBundle.getString("files")
         );
@@ -109,7 +112,7 @@ public class EspressoPadView extends JPanel {
         frontend.setHideable(fileTreeDockable, true);
         frontend.addFrontendListener(new FrontendAdapter(fileTreeDockable, frontend));
         splitDockStation.drop(fileTreeDockable, new SplitDockProperty(0, 0, .25, 1));
-        DefaultDockable tabPaneDockable = Utils.createDockable(this.tabPane, this.resourceBundle.getString("workspace"));
+        DefaultDockable tabPaneDockable = Utilities.createDockable(this.tabPane, this.resourceBundle.getString("workspace"));
         tabPaneDockable.setTitleIcon(FontIcon.of(FontAwesomeRegular.FILE, 11));
         frontend.addDockable("results", tabPaneDockable);
         frontend.setHideable(tabPaneDockable, false);
@@ -400,11 +403,11 @@ public class EspressoPadView extends JPanel {
         frontend.addRoot("root", station);
         RTextScrollPane scrollPane = new RTextScrollPane(model.getTextEditor());
         model.getTextEditor().setScrollPane(scrollPane);
-        DefaultDockable textDock = Utils.createDockable(scrollPane, model.getTitle());
+        DefaultDockable textDock = Utilities.createDockable(scrollPane, model.getTitle());
         frontend.addDockable("document", textDock);
         frontend.setHideable(textDock, false);
         station.drop(textDock, new SplitDockProperty(0, 0, 1, .6));
-        DefaultDockable dockable = Utils.createDockable(panel, this.resourceBundle.getString("results"));
+        DefaultDockable dockable = Utilities.createDockable(panel, this.resourceBundle.getString("results"));
         dockable.setTitleIcon(FontIcon.of(FontAwesomeSolid.GLASSES, 11));
         frontend.addDockable("results", dockable);
         frontend.setHideable(dockable, false);
@@ -415,7 +418,7 @@ public class EspressoPadView extends JPanel {
 
     private void openFile() {
         JFileChooser chooser = new JFileChooser();
-        chooser.setCurrentDirectory(Utils.validateDefaultDirectory());
+        chooser.setCurrentDirectory(Utilities.validateDefaultDirectory());
         chooser.setFileFilter(new FileNameExtensionFilter(this.resourceBundle.getString("jsh.file"), "jsh"));
         if (chooser.showOpenDialog(this.frame) == JFileChooser.APPROVE_OPTION) {
             this.openFile(chooser.getSelectedFile());
@@ -477,14 +480,24 @@ public class EspressoPadView extends JPanel {
     }
 
     private void saveFile() {
-        ViewModel currentViewModel = this.getCurrentView();
-        File savedFile = this.editorController.saveFile(currentViewModel);
-        if (savedFile != null) {
-            this.openFile(savedFile);
-            this.tabPane.removeTabAt(this.viewModels.indexOf(currentViewModel));
-            this.setupClosableTabs(savedFile.getName());
-            this.viewModels.remove(currentViewModel);
-            this.fileTree.refreshTree();
+        try {
+            ViewModel currentViewModel = this.getCurrentView();
+            Document document = currentViewModel.getResultView().getDocument();
+            String resultText = document.getText(0, document.getLength());
+            File savedFile = this.editorController.saveFile(currentViewModel);
+            if (savedFile != null) {
+                this.openFile(savedFile);
+                this.tabPane.removeTabAt(this.viewModels.indexOf(currentViewModel));
+                this.setupClosableTabs(savedFile.getName());
+                this.viewModels.remove(currentViewModel);
+                this.fileTree.refreshTree();
+                this.getCurrentView()
+                        .getResultView()
+                        .getDocument()
+                        .insertString(0, resultText, new SimpleAttributeSet());
+            }
+        } catch (BadLocationException e) {
+            throw new RuntimeException(e);
         }
     }
 

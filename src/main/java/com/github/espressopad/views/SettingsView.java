@@ -4,7 +4,7 @@ import com.github.espressopad.controller.EspressoPadController;
 import com.github.espressopad.controller.SettingsController;
 import com.github.espressopad.models.ArtifactModel;
 import com.github.espressopad.models.SettingsModel;
-import com.github.espressopad.utils.Utils;
+import com.github.espressopad.utils.Utilities;
 import com.github.espressopad.utils.XmlUtils;
 import com.github.espressopad.views.components.PlaceHolderTextField;
 import com.github.espressopad.views.components.TextEditor;
@@ -114,7 +114,7 @@ public class SettingsView {
         gbc.gridy = 1;
         panel.add(new JLabel(this.resourceBundle.getString("editor.font")), gbc);
         gbc.gridx = 1;
-        this.fontComboBox = new JComboBox<>(Utils.getMonospaceFonts());
+        this.fontComboBox = new JComboBox<>(Utilities.getMonospaceFonts());
         this.fontComboBox.setRenderer(new DefaultListCellRenderer() {
             @Override
             public Component getListCellRendererComponent(
@@ -194,7 +194,7 @@ public class SettingsView {
             );
             InputStream in = this.getClass().getResourceAsStream(themeLocation);
             Theme theme = Theme.load(in);
-            Font font = Utils.deriveFont(
+            Font font = Utilities.deriveFont(
                     null, Font.PLAIN,
                     Integer.parseInt(String.valueOf(this.fontSizeSpinner.getValue())),
                     ((Font) this.fontComboBox.getSelectedItem())

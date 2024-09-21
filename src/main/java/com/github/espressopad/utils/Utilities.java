@@ -17,7 +17,7 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Locale;
 
-public class Utils {
+public class Utilities {
     public static Font[] getMonospaceFonts() {
         FontRenderContext frc = new FontRenderContext(
                 null,
