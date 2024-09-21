@@ -30,7 +30,7 @@ import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
 
-public class XmlUtils {
+public class XmlUtilities {
     private final File importsFile = new File(URLDecoder.decode(this.getClass().getProtectionDomain().getCodeSource()
             .getLocation().getPath(), StandardCharsets.UTF_8))
             .toPath().getParent().resolve("imports.xml").toFile();
@@ -57,7 +57,7 @@ public class XmlUtils {
         return this.artifactFile;
     }
 
-    public XmlUtils() {
+    public XmlUtilities() {
         XmlPrettifier prettifier = new XmlPrettifier();
         this.printer.indentObjectsWith(prettifier);
         this.printer.indentArraysWith(prettifier);

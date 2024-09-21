@@ -13,7 +13,7 @@ import com.github.espressopad.controller.TextEditorController;
 import com.github.espressopad.models.SettingsModel;
 import com.github.espressopad.models.ViewModel;
 import com.github.espressopad.utils.Utilities;
-import com.github.espressopad.utils.XmlUtils;
+import com.github.espressopad.utils.XmlUtilities;
 import com.github.espressopad.views.components.FileTree;
 import com.github.espressopad.views.components.TextEditor;
 import org.fife.ui.rsyntaxtextarea.Theme;
@@ -50,7 +50,7 @@ public class EspressoPadView extends JPanel {
     private JMenuItem runMenuItem;
     private final List<ViewModel> viewModels = new ArrayList<>();
     private final TextEditorController editorController = new TextEditorController();
-    private final XmlUtils handler = new XmlUtils();
+    private final XmlUtilities handler = new XmlUtilities();
     private final JFrame frame;
     private boolean ignore = false;
     private SettingsModel settings;

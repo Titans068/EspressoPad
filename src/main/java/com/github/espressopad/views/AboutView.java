@@ -76,6 +76,7 @@ public class AboutView {
         this.buttonOK = new JButton();
         this.buttonOK.setHorizontalAlignment(0);
         this.buttonOK.setText("OK");
+        String url;
         GridBagConstraints gbc;
         gbc = new GridBagConstraints();
         gbc.gridx = 1;
@@ -138,7 +139,9 @@ public class AboutView {
         gbc.fill = GridBagConstraints.VERTICAL;
         panel3.add(spacer3, gbc);
         HyperlinkLabel label9 = new HyperlinkLabel(this.resourceBundle.getString("rsyntaxtextarea.by.bobbylight"));
-        label9.setURL("https://github.com/bobbylight/RSyntaxTextArea");
+        url = "https://github.com/bobbylight/RSyntaxTextArea";
+        label9.setURL(url);
+        label9.setToolTipText(url);
         gbc = new GridBagConstraints();
         gbc.gridx = 0;
         gbc.gridy = 2;
@@ -146,7 +149,9 @@ public class AboutView {
         gbc.insets = new Insets(0, 0, 10, 0);
         panel3.add(label9, gbc);
         HyperlinkLabel label2 = new HyperlinkLabel(this.resourceBundle.getString("ikonli.by.kordamp"));
-        label2.setURL("https://github.com/kordamp/ikonli");
+        url = "https://github.com/kordamp/ikonli";
+        label2.setURL(url);
+        label2.setToolTipText(url);
         gbc = new GridBagConstraints();
         gbc.gridx = 0;
         gbc.gridy = 3;
@@ -154,7 +159,9 @@ public class AboutView {
         gbc.insets = new Insets(0, 0, 10, 0);
         panel3.add(label2, gbc);
         HyperlinkLabel label3 = new HyperlinkLabel(this.resourceBundle.getString("maven.archeologist.by.square"));
-        label3.setURL("https://github.com/square/maven-archeologist");
+        url = "https://github.com/square/maven-archeologist";
+        label3.setURL(url);
+        label3.setToolTipText(url);
         gbc = new GridBagConstraints();
         gbc.gridx = 0;
         gbc.gridy = 4;
@@ -162,7 +169,9 @@ public class AboutView {
         gbc.insets = new Insets(0, 0, 10, 0);
         panel3.add(label3, gbc);
         HyperlinkLabel label4 = new HyperlinkLabel(this.resourceBundle.getString("jastyle.by.abrar.syed"));
-        label4.setURL("https://github.com/AbrarSyed/jastyle");
+        url = "https://github.com/AbrarSyed/jastyle";
+        label4.setURL(url);
+        label4.setToolTipText(url);
         gbc = new GridBagConstraints();
         gbc.gridx = 0;
         gbc.gridy = 5;
@@ -170,7 +179,9 @@ public class AboutView {
         gbc.insets = new Insets(0, 0, 10, 0);
         panel3.add(label4, gbc);
         HyperlinkLabel label5 = new HyperlinkLabel("JavaParser");
-        label5.setURL("https://javaparser.org/");
+        url = "https://javaparser.org/";
+        label5.setURL(url);
+        label5.setToolTipText(url);
         gbc = new GridBagConstraints();
         gbc.gridx = 0;
         gbc.gridy = 6;
@@ -178,7 +189,9 @@ public class AboutView {
         gbc.insets = new Insets(0, 0, 10, 0);
         panel3.add(label5, gbc);
         HyperlinkLabel label6 = new HyperlinkLabel("SLF4J");
-        label6.setURL("https://www.slf4j.org/");
+        url = "https://www.slf4j.org/";
+        label6.setURL(url);
+        label6.setToolTipText(url);
         gbc = new GridBagConstraints();
         gbc.gridx = 0;
         gbc.gridy = 7;
@@ -186,7 +199,9 @@ public class AboutView {
         gbc.insets = new Insets(0, 0, 10, 0);
         panel3.add(label6, gbc);
         HyperlinkLabel label7 = new HyperlinkLabel("Logback");
-        label7.setURL("https://logback.qos.ch/");
+        url = "https://logback.qos.ch/";
+        label7.setURL(url);
+        label7.setToolTipText(url);
         gbc = new GridBagConstraints();
         gbc.gridx = 0;
         gbc.gridy = 8;
@@ -194,7 +209,9 @@ public class AboutView {
         gbc.insets = new Insets(0, 0, 10, 0);
         panel3.add(label7, gbc);
         HyperlinkLabel label8 = new HyperlinkLabel("DockingFrames");
-        label8.setURL("https://www.docking-frames.org/");
+        url = "https://www.docking-frames.org/";
+        label8.setURL(url);
+        label8.setToolTipText(url);
         gbc = new GridBagConstraints();
         gbc.gridx = 0;
         gbc.gridy = 9;
@@ -202,7 +219,9 @@ public class AboutView {
         gbc.insets = new Insets(0, 0, 10, 0);
         panel3.add(label8, gbc);
         HyperlinkLabel label12 = new HyperlinkLabel("Jackson Dataformat XML");
-        label12.setURL("https://github.com/FasterXML/jackson-dataformat-xml");
+        url = "https://github.com/FasterXML/jackson-dataformat-xml";
+        label12.setURL(url);
+        label12.setToolTipText(url);
         gbc = new GridBagConstraints();
         gbc.gridx = 0;
         gbc.gridy = 10;
@@ -224,7 +243,7 @@ public class AboutView {
         panel4.add(label10, gbc);
         JLabel label11 = new JLabel();
         label11.setText(String.format("<html><p>%s</p><p>© %d</p><html>",
-                        this.resourceBundle.getString("espresso.version"), Year.now().getValue()));
+                        this.resourceBundle.getString("espresso.pad.version"), Year.now().getValue()));
         gbc = new GridBagConstraints();
         gbc.gridx = 0;
         gbc.gridy = 1;

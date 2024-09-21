@@ -3,7 +3,7 @@ package com.github.espressopad.controller;
 import com.github.espressopad.io.ConsoleInputStream;
 import com.github.espressopad.io.ConsoleOutputStream;
 import com.github.espressopad.models.ViewModel;
-import com.github.espressopad.utils.XmlUtils;
+import com.github.espressopad.utils.XmlUtilities;
 import com.github.espressopad.views.components.FileTree;
 import com.github.espressopad.views.components.MessageConsole;
 import com.github.espressopad.views.components.TextEditor;
@@ -45,7 +45,7 @@ public class EspressoPadController {
     private static final JShell shell = JShell.builder().out(null).in(null).err(null).build();
     private final Logger logger = LoggerFactory.getLogger(EspressoPadController.class);
     private final DefaultCompletionProvider provider = new DefaultCompletionProvider();
-    private final XmlUtils handler = new XmlUtils();
+    private final XmlUtilities handler = new XmlUtilities();
     private final ResourceBundle resourceBundle = ResourceBundle.getBundle("messages", Locale.getDefault());
 
     public static JShell getShell() {
@@ -194,7 +194,7 @@ public class EspressoPadController {
                 /*SourceCodeAnalysis.Documentation documentation = documentationList.get(i);
                 BasicCompletion basicCompletion = new BasicCompletion(
                         provider, suggestion.continuation(), documentation.signature(),
-                        HtmlUtils.convertJavaDoc(documentation.javadoc())
+                        HtmlUtilities.convertJavaDoc(documentation.javadoc())
                 );
                 completions.add(basicCompletion);*/
                 completions.add(new BasicCompletion(this.provider, suggestion.continuation()));

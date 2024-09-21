@@ -5,7 +5,7 @@ import com.github.espressopad.controller.SettingsController;
 import com.github.espressopad.models.ArtifactModel;
 import com.github.espressopad.models.SettingsModel;
 import com.github.espressopad.utils.Utilities;
-import com.github.espressopad.utils.XmlUtils;
+import com.github.espressopad.utils.XmlUtilities;
 import com.github.espressopad.views.components.PlaceHolderTextField;
 import com.github.espressopad.views.components.TextEditor;
 import com.squareup.tools.maven.resolution.ResolvedArtifact;
@@ -30,7 +30,7 @@ import java.util.stream.IntStream;
 public class SettingsView {
     private final Logger logger = LoggerFactory.getLogger(SettingsView.class);
     private final SettingsController controller = new SettingsController();
-    private final XmlUtils handler = new XmlUtils();
+    private final XmlUtilities handler = new XmlUtilities();
     private final JTabbedPane view = new JTabbedPane();
     private final SettingsModel settings;
     private JDialog dialog;

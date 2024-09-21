@@ -5,7 +5,7 @@ import java.util.ResourceBundle;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class HtmlUtils {
+public class HtmlUtilities {
 
     public static String convertJavaDoc(String input) {
         // Define regular expressions for JavaDoc tags
